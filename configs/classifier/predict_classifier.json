@@ -1,0 +1,19 @@
+{
+  "device": "auto",
+  "manifest_csv": "artifacts/manifests/nornikel_manifest.csv",
+  "checkpoint": "artifacts/runs/classifier_baseline/best.pt",
+  "output_csv": "artifacts/predictions/classifier_predictions.csv",
+  "include_sources": ["classification"],
+  "classes": ["ordinary", "thin", "talc"],
+  "data": {
+    "image_size": 384,
+    "batch_size": 8,
+    "num_workers": 0
+  },
+  "uncertainty": {
+    "min_confidence": 0.6,
+    "min_margin": 0.15,
+    "mark_label_conflicts_uncertain": true
+  }
+}
+

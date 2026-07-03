@@ -1,0 +1,18 @@
+{
+  "dataset_root": "dataset",
+  "output_csv": "artifacts/manifests/nornikel_manifest.csv",
+  "image_extensions": [".jpg", ".jpeg", ".png", ".bmp"],
+  "class_markers": {
+    "ordinary": ["рядовые", "рядовые руды"],
+    "thin": ["тонкие", "труднообогатимые"],
+    "talc": ["оталькованные", "оталькованные руды"]
+  },
+  "sources": {
+    "classification_part": "Фото руд по сортам. ч2",
+    "weak_talc_part": "Области оталькования",
+    "panorama_part": "Панорамы"
+  },
+  "hash_algorithm": "md5",
+  "max_hash_mb": 512
+}
+

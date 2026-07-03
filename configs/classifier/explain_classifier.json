@@ -1,0 +1,15 @@
+{
+  "device": "auto",
+  "manifest_csv": "artifacts/manifests/nornikel_manifest.csv",
+  "checkpoint": "artifacts/runs/classifier_resnet18/best.pt",
+  "output_dir": "artifacts/explanations/gradcam",
+  "include_sources": ["classification"],
+  "classes": ["ordinary", "thin", "talc"],
+  "data": {
+    "image_size": 384
+  },
+  "max_images": 48,
+  "only_uncertain_or_conflict": true,
+  "alpha": 0.45
+}
+

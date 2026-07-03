@@ -1,0 +1,12 @@
+{
+  "input_root": "dataset",
+  "output_root": "artifacts/weak_masks/talc",
+  "blue_hsv_lower": [95, 80, 40],
+  "blue_hsv_upper": [135, 255, 255],
+  "close_kernel": 17,
+  "dilate_iterations": 1,
+  "min_contour_area": 200,
+  "save_overlays": true,
+  "overlay_alpha": 0.45
+}
+

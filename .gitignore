@@ -1,0 +1,4 @@
+kaggle_notebooks/
+artifacts/
+__pycache__/
+*.pyc
