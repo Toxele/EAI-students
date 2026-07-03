@@ -2,17 +2,21 @@
   "seed": 42,
   "device": "auto",
   "manifest_csv": "artifacts/manifests/nornikel_manifest.csv",
-  "run_dir": "artifacts/runs/classifier_baseline",
+  "run_dir": "artifacts/runs/classifier_talc_mask_channel",
   "mlflow": {
     "enabled": true,
     "tracking_uri": "file:artifacts/mlruns",
     "experiment": "nornikel_ore_classifier",
-    "run_name": "resnet18_baseline"
+    "run_name": "resnet18_talc_mask_channel"
   },
   "include_sources": ["classification"],
   "exclude_conflicts": true,
   "exclude_duplicate_leaks": true,
   "classes": ["ordinary", "thin", "talc"],
+  "mask_channel": {
+    "enabled": true,
+    "report_csv": "artifacts/predictions/talc_masks/talc_prediction_report.csv"
+  },
   "split": {
     "val_fraction": 0.2,
     "group_column": "content_hash",
@@ -28,7 +32,8 @@
   "model": {
     "name": "resnet18",
     "pretrained": true,
-    "fallback": "small_cnn"
+    "fallback": "small_cnn",
+    "in_channels": 4
   },
   "optimizer": {
     "name": "adamw",

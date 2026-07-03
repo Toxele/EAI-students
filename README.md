@@ -48,6 +48,20 @@ Train the classifier:
 python -m scripts.train_classifier
 ```
 
+Evaluate classifier metrics, confusion matrix, ROC-AUC, and error examples:
+
+```bash
+python -m scripts.evaluate_classifier --checkpoint artifacts/runs/classifier_baseline/best.pt --mlflow
+```
+
+Train and evaluate the classifier with a predicted talc-mask fourth channel:
+
+```bash
+python -m scripts.predict_talc_masks checkpoint=artifacts/runs/talc_segmenter/best.pt output_dir=artifacts/predictions/talc_masks
+python -m scripts.train_classifier --config configs/classifier/nornikel_classifier_talc_mask_channel.json
+python -m scripts.evaluate_classifier --checkpoint artifacts/runs/classifier_talc_mask_channel/best.pt --output-dir artifacts/evaluation/classifier_talc_mask_channel --mlflow
+```
+
 Training writes:
 
 - `history.csv` with loss, accuracy, macro precision/recall/F1 per epoch;
@@ -103,6 +117,12 @@ Predict talc masks and estimated talc fractions:
 
 ```bash
 python -m scripts.predict_talc_masks
+```
+
+Evaluate the talc segmenter on train/val, save overlays, and log metrics/artifacts to MLflow:
+
+```bash
+python -m scripts.evaluate_talc_segmenter --checkpoint artifacts/runs/talc_segmenter/best.pt --mlflow
 ```
 
 Generate a lightweight browser editor for manually closing missed talc contours:

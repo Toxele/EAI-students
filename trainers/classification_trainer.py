@@ -21,6 +21,7 @@ except ImportError:  # pragma: no cover
     tqdm = None
 
 from data.datasets import OreClassificationDataset
+from loggers.mlflow_utils import MlflowRun
 from losses.classification import LabelSmoothingCrossEntropy
 from models.classifiers import ClassifierFactory
 
@@ -43,6 +44,7 @@ class ClassificationTrainer:
             image_size=cfg["data"]["image_size"],
             include_sources=cfg.get("include_sources"),
             exclude_conflicts=cfg.get("exclude_conflicts", True),
+            mask_channel=cfg.get("mask_channel"),
         )
         self.val_dataset = OreClassificationDataset(
             manifest_csv=cfg["manifest_csv"],
@@ -51,6 +53,7 @@ class ClassificationTrainer:
             image_size=cfg["data"]["image_size"],
             include_sources=cfg.get("include_sources"),
             exclude_conflicts=cfg.get("exclude_conflicts", True),
+            mask_channel=cfg.get("mask_channel"),
         )
         self.train_loader = self._make_loader(self.train_dataset, train=True)
         self.val_loader = self._make_loader(self.val_dataset, train=False)
@@ -60,34 +63,41 @@ class ClassificationTrainer:
         self.scaler = torch.cuda.amp.GradScaler(enabled=cfg["trainer"].get("amp", True) and self.device.type == "cuda")
 
     def fit(self) -> dict[str, Any]:
-        best_score = -1.0
-        stale_epochs = 0
-        history: list[dict[str, float]] = []
-        epoch_iter = range(1, self.cfg["trainer"]["epochs"] + 1)
-        if tqdm is not None:
-            epoch_iter = tqdm(epoch_iter, desc="epochs", unit="epoch")
-        for epoch in epoch_iter:
-            train_metrics = self._run_epoch(epoch=epoch, train=True)
-            val_metrics = self._run_epoch(epoch=epoch, train=False)
-            row = {"epoch": epoch, **{f"train_{k}": v for k, v in train_metrics.items()}, **{f"val_{k}": v for k, v in val_metrics.items()}}
-            history.append(row)
-            self._write_history(history)
-            score = val_metrics["macro_f1"]
-            if score > best_score:
-                best_score = score
-                stale_epochs = 0
-                self._save_checkpoint("best.pt", epoch, val_metrics)
-                self._snapshot_best_reports()
-            else:
-                stale_epochs += 1
-            if epoch % self.cfg["trainer"].get("save_every", 1) == 0:
-                self._save_checkpoint(f"epoch_{epoch:03d}.pt", epoch, val_metrics)
-            patience = self.cfg["trainer"].get("early_stopping_patience", 0)
-            if patience and stale_epochs >= patience:
-                break
-        summary = {"best_val_macro_f1": best_score, "epochs": len(history)}
-        (self.run_dir / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
-        return summary
+        with MlflowRun(self.cfg.get("mlflow"), run_name=self.cfg.get("run_name", "classifier")) as mlrun:
+            mlrun.log_params_flat(self.cfg)
+            best_score = -1.0
+            stale_epochs = 0
+            history: list[dict[str, float]] = []
+            epoch_iter = range(1, self.cfg["trainer"]["epochs"] + 1)
+            if tqdm is not None:
+                epoch_iter = tqdm(epoch_iter, desc="epochs", unit="epoch")
+            for epoch in epoch_iter:
+                train_metrics = self._run_epoch(epoch=epoch, train=True)
+                val_metrics = self._run_epoch(epoch=epoch, train=False)
+                row = {"epoch": epoch, **{f"train_{k}": v for k, v in train_metrics.items()}, **{f"val_{k}": v for k, v in val_metrics.items()}}
+                history.append(row)
+                self._write_history(history)
+                mlrun.log_metrics({f"train_{k}": v for k, v in train_metrics.items()}, step=epoch)
+                mlrun.log_metrics({f"val_{k}": v for k, v in val_metrics.items()}, step=epoch)
+                score = val_metrics["macro_f1"]
+                if score > best_score:
+                    best_score = score
+                    stale_epochs = 0
+                    self._save_checkpoint("best.pt", epoch, val_metrics)
+                    self._snapshot_best_reports()
+                else:
+                    stale_epochs += 1
+                if epoch % self.cfg["trainer"].get("save_every", 1) == 0:
+                    self._save_checkpoint(f"epoch_{epoch:03d}.pt", epoch, val_metrics)
+                patience = self.cfg["trainer"].get("early_stopping_patience", 0)
+                if patience and stale_epochs >= patience:
+                    break
+            summary = {"best_val_macro_f1": best_score, "epochs": len(history)}
+            (self.run_dir / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
+            mlrun.log_metrics(summary)
+            for name in ["history.csv", "best_metrics.json", "best_confusion.csv", "best_per_class_metrics.csv", "summary.json"]:
+                mlrun.log_artifact(self.run_dir / name)
+            return summary
 
     def _run_epoch(self, epoch: int, train: bool) -> dict[str, float]:
         loader = self.train_loader if train else self.val_loader

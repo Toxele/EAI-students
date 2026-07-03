@@ -10,6 +10,7 @@ try:
     import numpy as np
     import torch
     from torch.utils.data import DataLoader
+    from sklearn.metrics import roc_auc_score
 except ImportError:  # pragma: no cover
     torch = None
 
@@ -19,6 +20,7 @@ except ImportError:  # pragma: no cover
     tqdm = None
 
 from data.segmentation_datasets import TalcSegmentationDataset
+from loggers.mlflow_utils import MlflowRun
 from losses.segmentation import TalcSegmentationLoss
 from models.segmentation import SegmentationFactory
 
@@ -69,39 +71,47 @@ class TalcSegmentationTrainer:
         )
 
     def fit(self) -> dict[str, Any]:
-        best_dice = -1.0
-        stale_epochs = 0
-        history: list[dict[str, float]] = []
-        epochs = range(1, self.cfg["trainer"]["epochs"] + 1)
-        if tqdm is not None:
-            epochs = tqdm(epochs, desc="talc epochs", unit="epoch")
-        for epoch in epochs:
-            train_metrics = self._run_epoch(epoch, train=True)
-            val_metrics = self._run_epoch(epoch, train=False)
-            row = {
-                "epoch": epoch,
-                **{f"train_{k}": v for k, v in train_metrics.items()},
-                **{f"val_{k}": v for k, v in val_metrics.items()},
-            }
-            history.append(row)
-            self._write_history(history)
-            if val_metrics["dice"] > best_dice:
-                best_dice = val_metrics["dice"]
-                stale_epochs = 0
-                self._save_checkpoint("best.pt", epoch, val_metrics)
-                (self.run_dir / "best_metrics.json").write_text(
-                    json.dumps(val_metrics, ensure_ascii=False, indent=2), encoding="utf-8"
-                )
-            else:
-                stale_epochs += 1
-            if epoch % self.cfg["trainer"].get("save_every", 1) == 0:
-                self._save_checkpoint(f"epoch_{epoch:03d}.pt", epoch, val_metrics)
-            patience = self.cfg["trainer"].get("early_stopping_patience", 0)
-            if patience and stale_epochs >= patience:
-                break
-        summary = {"best_val_dice": best_dice, "epochs": len(history)}
-        (self.run_dir / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
-        return summary
+        with MlflowRun(self.cfg.get("mlflow"), run_name=self.cfg.get("run_name", "talc_segmenter")) as mlrun:
+            mlrun.log_params_flat(self.cfg)
+            best_dice = -1.0
+            stale_epochs = 0
+            history: list[dict[str, float]] = []
+            epochs = range(1, self.cfg["trainer"]["epochs"] + 1)
+            if tqdm is not None:
+                epochs = tqdm(epochs, desc="talc epochs", unit="epoch")
+            for epoch in epochs:
+                train_metrics = self._run_epoch(epoch, train=True)
+                val_metrics = self._run_epoch(epoch, train=False)
+                row = {
+                    "epoch": epoch,
+                    **{f"train_{k}": v for k, v in train_metrics.items()},
+                    **{f"val_{k}": v for k, v in val_metrics.items()},
+                }
+                history.append(row)
+                self._write_history(history)
+                mlrun.log_metrics({f"train_{k}": v for k, v in train_metrics.items()}, step=epoch)
+                mlrun.log_metrics({f"val_{k}": v for k, v in val_metrics.items()}, step=epoch)
+                if val_metrics["dice"] > best_dice:
+                    best_dice = val_metrics["dice"]
+                    stale_epochs = 0
+                    self._save_checkpoint("best.pt", epoch, val_metrics)
+                    (self.run_dir / "best_metrics.json").write_text(
+                        json.dumps(val_metrics, ensure_ascii=False, indent=2), encoding="utf-8"
+                    )
+                else:
+                    stale_epochs += 1
+                if epoch % self.cfg["trainer"].get("save_every", 1) == 0:
+                    self._save_checkpoint(f"epoch_{epoch:03d}.pt", epoch, val_metrics)
+                patience = self.cfg["trainer"].get("early_stopping_patience", 0)
+                if patience and stale_epochs >= patience:
+                    break
+            summary = {"best_val_dice": best_dice, "epochs": len(history)}
+            (self.run_dir / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
+            mlrun.log_metrics(summary)
+            mlrun.log_artifact(self.run_dir / "history.csv")
+            mlrun.log_artifact(self.run_dir / "best_metrics.json")
+            mlrun.log_artifact(self.run_dir / "summary.json")
+            return summary
 
     def _run_epoch(self, epoch: int, train: bool) -> dict[str, float]:
         loader = self.train_loader if train else self.val_loader
@@ -110,7 +120,9 @@ class TalcSegmentationTrainer:
         iterator = tqdm(loader, desc=f"{phase} talc {epoch}", unit="batch", leave=False) if tqdm is not None else loader
         total_loss = 0.0
         total_items = 0
-        sums = {"dice": 0.0, "iou": 0.0, "fraction_mae": 0.0}
+        sums = {"dice": 0.0, "f1": 0.0, "iou": 0.0, "fraction_mae": 0.0}
+        auc_probs = []
+        auc_targets = []
         threshold = self.cfg["trainer"].get("threshold", 0.5)
         for batch in iterator:
             images = batch["image"].to(self.device)
@@ -130,14 +142,22 @@ class TalcSegmentationTrainer:
             total_items += batch_size
             for key in sums:
                 sums[key] += metrics[key] * batch_size
+            if self.cfg["trainer"].get("roc_auc", True):
+                probs = torch.sigmoid(logits.detach()).float().cpu().numpy().ravel()
+                targets = masks.detach().float().cpu().numpy().ravel()
+                auc_probs.append(probs)
+                auc_targets.append(targets)
             if tqdm is not None:
                 iterator.set_postfix(loss=total_loss / max(total_items, 1), dice=sums["dice"] / max(total_items, 1))
-        return {
+        result = {
             "loss": total_loss / max(total_items, 1),
             "dice": sums["dice"] / max(total_items, 1),
+            "f1": sums["f1"] / max(total_items, 1),
             "iou": sums["iou"] / max(total_items, 1),
             "fraction_mae": sums["fraction_mae"] / max(total_items, 1),
         }
+        result["roc_auc"] = self._roc_auc(auc_targets, auc_probs) if auc_probs else float("nan")
+        return result
 
     @staticmethod
     def _batch_metrics(logits, masks, threshold: float) -> dict[str, float]:
@@ -153,9 +173,18 @@ class TalcSegmentationTrainer:
         fraction_mae = (preds.mean(dims) - masks.mean(dims)).abs().mean()
         return {
             "dice": float(dice.detach().cpu()),
+            "f1": float(dice.detach().cpu()),
             "iou": float(iou.detach().cpu()),
             "fraction_mae": float(fraction_mae.detach().cpu()),
         }
+
+    @staticmethod
+    def _roc_auc(target_chunks: list, prob_chunks: list) -> float:
+        targets = np.concatenate(target_chunks)
+        probs = np.concatenate(prob_chunks)
+        if len(np.unique(targets)) < 2:
+            return float("nan")
+        return float(roc_auc_score(targets, probs))
 
     def _save_checkpoint(self, name: str, epoch: int, metrics: dict[str, float]) -> None:
         torch.save(

@@ -3,6 +3,12 @@
   "device": "auto",
   "dataset_csv": "artifacts/manifests/talc_segmentation_dataset.csv",
   "run_dir": "artifacts/runs/talc_segmenter",
+  "mlflow": {
+    "enabled": true,
+    "tracking_uri": "file:artifacts/mlruns",
+    "experiment": "nornikel_talc_segmentation",
+    "run_name": "tiny_unet_manual_masks"
+  },
   "data": {
     "image_size": 384,
     "batch_size": 4,
@@ -49,6 +55,7 @@
     "amp": true,
     "save_every": 1,
     "early_stopping_patience": 7,
-    "threshold": 0.5
+    "threshold": 0.5,
+    "roc_auc": true
   }
 }
