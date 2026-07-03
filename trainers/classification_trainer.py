@@ -12,6 +12,7 @@ try:
     import torch
     import torch.nn as nn
     from torch.utils.data import DataLoader, WeightedRandomSampler
+    from sklearn.metrics import roc_auc_score
 except ImportError:  # pragma: no cover
     torch = None
 
@@ -45,6 +46,7 @@ class ClassificationTrainer:
             include_sources=cfg.get("include_sources"),
             exclude_conflicts=cfg.get("exclude_conflicts", True),
             mask_channel=cfg.get("mask_channel"),
+            augmentation_cfg=cfg.get("augmentation", {}),
         )
         self.val_dataset = OreClassificationDataset(
             manifest_csv=cfg["manifest_csv"],
@@ -54,11 +56,12 @@ class ClassificationTrainer:
             include_sources=cfg.get("include_sources"),
             exclude_conflicts=cfg.get("exclude_conflicts", True),
             mask_channel=cfg.get("mask_channel"),
+            augmentation_cfg={},
         )
         self.train_loader = self._make_loader(self.train_dataset, train=True)
         self.val_loader = self._make_loader(self.val_dataset, train=False)
         self.model = ClassifierFactory.create(cfg["model"], len(self.classes)).to(self.device)
-        self.criterion = LabelSmoothingCrossEntropy()
+        self.criterion = LabelSmoothingCrossEntropy(smoothing=cfg.get("loss", {}).get("label_smoothing", 0.05))
         self.optimizer = self._make_optimizer()
         self.scaler = torch.cuda.amp.GradScaler(enabled=cfg["trainer"].get("amp", True) and self.device.type == "cuda")
 
@@ -106,6 +109,8 @@ class ClassificationTrainer:
         total_correct = 0
         total_items = 0
         confusion = np.zeros((len(self.classes), len(self.classes)), dtype=np.int64)
+        y_true: list[int] = []
+        y_prob: list[list[float]] = []
         phase = "train" if train else "val"
         iterator = loader
         if tqdm is not None:
@@ -123,9 +128,12 @@ class ClassificationTrainer:
                     self.scaler.step(self.optimizer)
                     self.scaler.update()
             preds = logits.argmax(dim=1)
+            probs = torch.softmax(logits.detach(), dim=1)
             total_loss += float(loss.detach().cpu()) * labels.numel()
             total_correct += int((preds == labels).sum().detach().cpu())
             total_items += labels.numel()
+            y_true.extend(labels.detach().cpu().tolist())
+            y_prob.extend(probs.cpu().numpy().tolist())
             for true, pred in zip(labels.detach().cpu().tolist(), preds.detach().cpu().tolist()):
                 confusion[true, pred] += 1
             if tqdm is not None:
@@ -133,7 +141,7 @@ class ClassificationTrainer:
                     loss=total_loss / max(total_items, 1),
                     acc=total_correct / max(total_items, 1),
                 )
-        metrics = self._metrics_from_confusion(confusion)
+        metrics = self._metrics_from_confusion(confusion, y_true=y_true, y_prob=y_prob)
         metrics["loss"] = total_loss / max(total_items, 1)
         metrics["accuracy"] = total_correct / max(total_items, 1)
         if not train:
@@ -188,11 +196,13 @@ class ClassificationTrainer:
             for label, row in zip(self.classes, matrix.tolist()):
                 writer.writerow([label, *row])
 
-    def _metrics_from_confusion(self, matrix) -> dict[str, Any]:
+    def _metrics_from_confusion(self, matrix, y_true: list[int] | None = None, y_prob: list[list[float]] | None = None) -> dict[str, Any]:
         per_class: list[dict[str, float | str | int]] = []
         f1_values: list[float] = []
         precision_values: list[float] = []
         recall_values: list[float] = []
+        auc_values: list[float] = []
+        auc_by_class = self._auc_by_class(y_true or [], y_prob or [])
         for idx, label in enumerate(self.classes):
             tp = int(matrix[idx, idx])
             fp = int(matrix[:, idx].sum() - tp)
@@ -204,12 +214,17 @@ class ClassificationTrainer:
             precision_values.append(precision)
             recall_values.append(recall)
             f1_values.append(f1)
+            auc = auc_by_class.get(label, float("nan"))
+            if not np.isnan(auc):
+                auc_values.append(auc)
             per_class.append(
                 {
                     "class": label,
                     "precision": precision,
                     "recall": recall,
                     "f1": f1,
+                    "dice": f1,
+                    "auc": auc,
                     "support": support,
                 }
             )
@@ -217,15 +232,31 @@ class ClassificationTrainer:
             "macro_precision": float(np.mean(precision_values)) if precision_values else 0.0,
             "macro_recall": float(np.mean(recall_values)) if recall_values else 0.0,
             "macro_f1": float(np.mean(f1_values)) if f1_values else 0.0,
+            "macro_dice": float(np.mean(f1_values)) if f1_values else 0.0,
+            "macro_auc": float(np.mean(auc_values)) if auc_values else float("nan"),
             "per_class": per_class,
         }
 
     def _write_per_class_metrics(self, rows: list[dict[str, Any]]) -> None:
         path = self.run_dir / "per_class_metrics.csv"
         with path.open("w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=["class", "precision", "recall", "f1", "support"])
+            writer = csv.DictWriter(f, fieldnames=["class", "precision", "recall", "f1", "dice", "auc", "support"])
             writer.writeheader()
             writer.writerows(rows)
+
+    def _auc_by_class(self, y_true: list[int], y_prob: list[list[float]]) -> dict[str, float]:
+        if not y_true or not y_prob:
+            return {label: float("nan") for label in self.classes}
+        targets = np.array(y_true)
+        probs = np.array(y_prob, dtype=np.float32)
+        output: dict[str, float] = {}
+        for idx, label in enumerate(self.classes):
+            binary = (targets == idx).astype(np.uint8)
+            if len(np.unique(binary)) < 2:
+                output[label] = float("nan")
+                continue
+            output[label] = float(roc_auc_score(binary, probs[:, idx]))
+        return output
 
     def _write_metrics_json(self, metrics: dict[str, Any]) -> None:
         path = self.run_dir / "metrics.json"

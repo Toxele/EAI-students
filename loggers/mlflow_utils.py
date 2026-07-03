@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
+from urllib.parse import quote
 from typing import Any
 
 
@@ -22,7 +24,10 @@ class MlflowRun:
             raise ImportError("MLflow logging requested, but `mlflow` is not installed.") from exc
         self.mlflow = mlflow
         if self.cfg.get("tracking_uri"):
-            mlflow.set_tracking_uri(self.cfg["tracking_uri"])
+            tracking_uri = self._resolve_tracking_uri(str(self.cfg["tracking_uri"]))
+            if tracking_uri.startswith("file:"):
+                os.environ.setdefault("MLFLOW_ALLOW_FILE_STORE", "true")
+            mlflow.set_tracking_uri(tracking_uri)
         if self.cfg.get("experiment"):
             mlflow.set_experiment(self.cfg["experiment"])
         mlflow.start_run(run_name=self.run_name or self.cfg.get("run_name"))
@@ -71,3 +76,10 @@ class MlflowRun:
             else:
                 output[full_key] = value
         return output
+
+    @staticmethod
+    def _resolve_tracking_uri(uri: str) -> str:
+        if uri.startswith("file:") and not uri.startswith("file:/"):
+            path = Path(uri.removeprefix("file:")).resolve()
+            return f"file:///{quote(path.as_posix(), safe='/:')}"
+        return uri

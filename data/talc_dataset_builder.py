@@ -17,6 +17,7 @@ class TalcSegmentationDatasetBuilder:
     def __init__(self, cfg: dict[str, Any]) -> None:
         self.cfg = cfg
         self.seed = cfg.get("seed", 42)
+        self.project_root = self._infer_project_root(cfg)
 
     def build(self) -> list[dict[str, Any]]:
         positives = self._read_positives()
@@ -38,12 +39,13 @@ class TalcSegmentationDatasetBuilder:
         include_weak_fallback = self.cfg.get("include_weak_fallback", False)
         output: list[dict[str, Any]] = []
         for row in rows:
-            image_path = row["image_path"]
-            mask_path = row["mask_path"]
+            original_image_path = row["image_path"]
+            image_path = str(self._resolve_path(original_image_path))
+            mask_path = str(self._resolve_path(row["mask_path"]))
             sample_type = "positive_weak"
-            manual_mask = self._manual_mask_path(manual_dir, image_path) if manual_dir else None
+            manual_mask = self._find_manual_mask(manual_dir, original_image_path, image_path) if manual_dir else None
             if manual_mask and manual_mask.exists():
-                mask_path = str(manual_mask)
+                mask_path = str(self._resolve_path(manual_mask))
                 sample_type = "positive_manual"
             elif not include_weak_fallback:
                 continue
@@ -52,6 +54,7 @@ class TalcSegmentationDatasetBuilder:
                 {
                     "image_path": image_path,
                     "mask_path": mask_path,
+                    "rel_path": self._relative_path(image_path),
                     "sample_type": sample_type,
                     "source_label": "talc",
                     "foreground_fraction": foreground_fraction,
@@ -80,16 +83,18 @@ class TalcSegmentationDatasetBuilder:
         rng = random.Random(self.seed)
         rng.shuffle(candidates)
         selected = candidates[: min(count, len(candidates))]
-        mask_dir = Path(self.cfg["negative_mask_dir"])
+        mask_dir = self._resolve_path(self.cfg["negative_mask_dir"])
         mask_dir.mkdir(parents=True, exist_ok=True)
         output: list[dict[str, Any]] = []
         for row in selected:
             mask_path = mask_dir / f"{Path(row['rel_path']).stem}_{row['content_hash'][:8]}_zero.png"
-            self._write_zero_mask(row["path"], mask_path)
+            image_path = str(self._resolve_path(row["path"]))
+            self._write_zero_mask(image_path, mask_path)
             output.append(
                 {
-                    "image_path": row["path"],
+                    "image_path": image_path,
                     "mask_path": str(mask_path),
+                    "rel_path": row.get("rel_path") or self._relative_path(image_path),
                     "sample_type": "negative_zero",
                     "source_label": row["label"],
                     "foreground_fraction": 0.0,
@@ -130,6 +135,49 @@ class TalcSegmentationDatasetBuilder:
     @classmethod
     def _manual_mask_path(cls, manual_dir: Path, image_path: str) -> Path:
         return manual_dir / f"{cls._safe_stem(image_path)}__manual_mask.png"
+
+    @classmethod
+    def _find_manual_mask(cls, manual_dir: Path, *image_paths: str) -> Path | None:
+        for image_path in image_paths:
+            mask_path = cls._manual_mask_path(manual_dir, image_path)
+            if mask_path.exists():
+                return mask_path
+        return cls._manual_mask_path(manual_dir, image_paths[-1]) if image_paths else None
+
+    def _resolve_path(self, path: str | Path) -> Path:
+        candidate = Path(path)
+        if candidate.is_absolute():
+            return candidate
+        if candidate.exists():
+            return candidate.resolve()
+        project_candidate = self.project_root / candidate
+        if project_candidate.exists() or self.project_root.exists():
+            return project_candidate
+        return candidate
+
+    def _relative_path(self, path: str | Path) -> str:
+        path = Path(path)
+        try:
+            return path.resolve().relative_to(self.project_root.resolve()).as_posix()
+        except ValueError:
+            return path.as_posix()
+
+    @staticmethod
+    def _infer_project_root(cfg: dict[str, Any]) -> Path:
+        for key in ("project_root", "manifest_csv", "output_csv", "weak_mask_report_csv"):
+            value = cfg.get(key)
+            if not value:
+                continue
+            path = Path(value)
+            if key == "project_root":
+                return path.resolve()
+            if path.is_absolute():
+                parts = path.parts
+                if "artifacts" in parts:
+                    artifacts_index = parts.index("artifacts")
+                    return Path(*parts[:artifacts_index]).resolve()
+                return path.parent.resolve()
+        return Path.cwd().resolve()
 
     @staticmethod
     def _mask_fraction(mask_path: str | Path) -> float:
