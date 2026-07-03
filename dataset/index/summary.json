@@ -1,0 +1,18 @@
+{
+  "total_files_in_source": 1235,
+  "unique_md5": 1178,
+  "classification_copies": 1136,
+  "talc_pairs": 42,
+  "folders": {
+    "non_talc_bearing__fine": 67,
+    "unknown_talc__coarse": 459,
+    "unknown_talc__fine": 390,
+    "unknown_talc__coarse_and_fine": 13,
+    "talc_bearing__unknown_intergrowth": 115,
+    "talc_bearing__coarse": 9,
+    "non_talc_bearing__coarse": 68,
+    "panoramas": 13,
+    "talc_mixed__fine": 1,
+    "talc_bearing__fine": 1
+  }
+}
