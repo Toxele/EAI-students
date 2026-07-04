@@ -39,7 +39,6 @@ body {
 .viewer-overlay-svg.is-active {
   opacity: 1;
   visibility: visible;
-  pointer-events: auto;
 }
 
 .viewer-overlay-svg rect {
@@ -51,6 +50,11 @@ body {
 .viewer-overlay-svg rect.selected {
   stroke-width: 3;
   stroke-dasharray: 5 3;
+}
+
+.viewer-overlay-svg rect.grain-rect-movable {
+  cursor: move;
+  touch-action: none;
 }
 
 .viewer-overlay-svg .grain-handle {

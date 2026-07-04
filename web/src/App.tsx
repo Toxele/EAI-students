@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useId } from "react";
+import { useState, useCallback, useRef } from "react";
 import {
   AppShell,
   Group,
@@ -41,33 +41,23 @@ const LAYER_OPTIONS = [
 // Nornickel corporate palette (Стандарт «Фирменный стиль», стр. 35):
 // синий Pantone 3005 = #0077C8, темно-синий Pantone 2945 = #004C97
 const BRAND_BLUE = "#004C97";
-const BRAND_ACCENT = "#0077C8";
 
-// Фирменный знак: два круга одинакового радиуса, центры на одной горизонтали,
-// расстояние между центрами равно радиусу (каждый круг проходит через центр
-// другого), диагональный разрез под ~34° в два фирменных оттенка синего
-// (стр. 9, 15). Белая плашка-подложка — как в примере «Иконка» (стр. 100),
-// обеспечивает контраст знака на цветном/тёмном фоне (правило стр. 18).
-function BrandMark({ size = 40 }: { size?: number }) {
-  const clipId = useId();
+// Официальный логотип на белой плашке-подложке — обеспечивает контраст
+// знака на цветном/тёмном фоне (правило стр. 18).
+function BrandMark() {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 100 100"
-      style={{ flexShrink: 0 }}
-      role="img"
-      aria-label="Норникель"
+    <div
+      style={{
+        background: "#fff",
+        borderRadius: 12,
+        padding: "6px 14px",
+        display: "flex",
+        alignItems: "center",
+        flexShrink: 0,
+      }}
     >
-      <rect width="100" height="100" rx="18" ry="18" fill="#fff" />
-      <defs>
-        <clipPath id={clipId}>
-          <polygon points="87.5,0 100,0 100,100 12.5,100" />
-        </clipPath>
-      </defs>
-      <circle cx="36" cy="50" r="32" fill={BRAND_ACCENT} />
-      <circle cx="64" cy="50" r="32" fill={BRAND_BLUE} clipPath={`url(#${clipId})`} />
-    </svg>
+      <img src="/nornickel-logo.png" alt="Норникель" height={28} />
+    </div>
   );
 }
 
@@ -178,14 +168,9 @@ export default function App() {
         <Group h="100%" justify="space-between" wrap="nowrap">
           <Group gap="sm">
             <BrandMark />
-            <div>
-              <Title order={4} lh={1.2} c="#fff" tt="uppercase" style={{ letterSpacing: 0.5 }}>
-                Норникель
-              </Title>
-              <Text size="xs" c="#B9CBEE">
-                Ore Analyzer · AI-анализ шлифов руды
-              </Text>
-            </div>
+            <Text size="xs" c="#B9CBEE">
+              Ore Analyzer · AI-анализ шлифов руды
+            </Text>
           </Group>
 
           <Group gap="sm" wrap="nowrap">
@@ -349,23 +334,25 @@ export default function App() {
                     background: "linear-gradient(135deg, #fff 0%, #eaf4fc 100%)",
                   }}
                 >
-                  <Stack align="center" gap="md" maw={420} ta="center" p="xl">
-                    <ThemeIcon size={64} radius="xl" variant="light" color="nornickel">
-                      <IconPhoto size={32} />
-                    </ThemeIcon>
-                    <Title order={3}>Загрузите изображение</Title>
-                    <Text c="dimmed" size="sm">
-                      Выберите режим (панорама или близкое фото), нажмите «Загрузить фото».
-                      После анализа используйте zoom для деталей — на слое «Тип» можно править зёрна.
-                    </Text>
-                    <Button
-                      radius="xl"
-                      leftSection={<IconUpload size={16} />}
-                      onClick={() => fileRef.current?.click()}
-                    >
-                      Выбрать файл
-                    </Button>
-                  </Stack>
+                  {!loading && (
+                    <Stack align="center" gap="md" maw={420} ta="center" p="xl">
+                      <ThemeIcon size={64} radius="xl" variant="light" color="nornickel">
+                        <IconPhoto size={32} />
+                      </ThemeIcon>
+                      <Title order={3}>Загрузите изображение</Title>
+                      <Text c="dimmed" size="sm">
+                        Выберите режим (панорама или близкое фото), нажмите «Загрузить фото».
+                        После анализа используйте zoom для деталей — на слое «Тип» можно править зёрна.
+                      </Text>
+                      <Button
+                        radius="xl"
+                        leftSection={<IconUpload size={16} />}
+                        onClick={() => fileRef.current?.click()}
+                      >
+                        Выбрать файл
+                      </Button>
+                    </Stack>
+                  )}
                 </Paper>
               )}
             </Box>
@@ -376,6 +363,7 @@ export default function App() {
                 <GrainEditor
                   key={selectedGrain?.id ?? "none"}
                   grain={selectedGrain}
+                  onBboxChange={handleGrainBboxChange}
                   onSave={handleSaveGrain}
                   saving={saving}
                 />

@@ -89,8 +89,8 @@ def build_pdf_bytes(
 
     # --- Заключение ---
     pdf.set_font(_FONT_FAMILY, size=11)
-    pdf.multi_cell(pdf.epw, 6, "Заключение:")
-    pdf.multi_cell(pdf.epw, 6, _strip_markdown(conclusion))
+    pdf.multi_cell(pdf.epw, 6, "Заключение:", new_x="LMARGIN", new_y="NEXT")
+    pdf.multi_cell(pdf.epw, 6, _strip_markdown(conclusion), new_x="LMARGIN", new_y="NEXT")
     pdf.ln(4)
 
     # --- Таблица метрик ---
@@ -125,7 +125,7 @@ def build_pdf_bytes(
     # --- Пояснение rule engine (кратко) ---
     if explanation:
         pdf.set_font(_FONT_FAMILY, size=10)
-        pdf.multi_cell(pdf.epw, 5, f"Правило: {explanation[:500]}")
+        pdf.multi_cell(pdf.epw, 5, f"Правило: {explanation[:500]}", new_x="LMARGIN", new_y="NEXT")
 
     # --- Слои (обзор, тальк, тип) ---
     layers = [

@@ -17,16 +17,13 @@ import { statusLabel } from "../api";
 
 interface Props {
   grain: Grain | null;
+  onBboxChange: (id: number, bbox: [number, number, number, number]) => void;
   onSave: (id: number, status: GrainStatus, bbox: [number, number, number, number]) => void;
   saving: boolean;
 }
 
-export default function GrainEditor({ grain, onSave, saving }: Props) {
+export default function GrainEditor({ grain, onBboxChange, onSave, saving }: Props) {
   const [status, setStatus] = useState<GrainStatus>("ordinary");
-  const [bx, setBx] = useState<number | "">("");
-  const [by, setBy] = useState<number | "">("");
-  const [bw, setBw] = useState<number | "">("");
-  const [bh, setBh] = useState<number | "">("");
 
   if (!grain) {
     return (
@@ -46,6 +43,13 @@ export default function GrainEditor({ grain, onSave, saving }: Props) {
 
   const currentStatus = status !== grain.status ? status : grain.status;
   const [x, y, w, h] = grain.bbox;
+
+  const updateBbox = (index: 0 | 1 | 2 | 3, value: number | string) => {
+    if (typeof value !== "number") return;
+    const next: [number, number, number, number] = [x, y, w, h];
+    next[index] = value;
+    onBboxChange(grain.id, next);
+  };
 
   return (
     <Paper p="md" radius="xl" shadow="xs" withBorder>
@@ -94,24 +98,17 @@ export default function GrainEditor({ grain, onSave, saving }: Props) {
         Bbox (x, y, w, h)
       </Text>
       <Group grow mb="md">
-        <NumberInput placeholder={`x=${x}`} value={bx} onChange={(v) => setBx(typeof v === "number" ? v : "")} min={0} />
-        <NumberInput placeholder={`y=${y}`} value={by} onChange={(v) => setBy(typeof v === "number" ? v : "")} min={0} />
-        <NumberInput placeholder={`w=${w}`} value={bw} onChange={(v) => setBw(typeof v === "number" ? v : "")} min={1} />
-        <NumberInput placeholder={`h=${h}`} value={bh} onChange={(v) => setBh(typeof v === "number" ? v : "")} min={1} />
+        <NumberInput label="x" value={x} onChange={(v) => updateBbox(0, v)} min={0} />
+        <NumberInput label="y" value={y} onChange={(v) => updateBbox(1, v)} min={0} />
+        <NumberInput label="w" value={w} onChange={(v) => updateBbox(2, v)} min={1} />
+        <NumberInput label="h" value={h} onChange={(v) => updateBbox(3, v)} min={1} />
       </Group>
 
       <Button
         fullWidth
         radius="xl"
         loading={saving}
-        onClick={() =>
-          onSave(grain.id, currentStatus, [
-            typeof bx === "number" ? bx : x,
-            typeof by === "number" ? by : y,
-            typeof bw === "number" ? bw : w,
-            typeof bh === "number" ? bh : h,
-          ])
-        }
+        onClick={() => onSave(grain.id, currentStatus, grain.bbox)}
       >
         Сохранить правку
       </Button>

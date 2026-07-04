@@ -8,21 +8,27 @@ import { absUrl, grainColor } from "../api";
 const MAX_SVG_GRAINS = 800;
 
 type Corner = "tl" | "tr" | "bl" | "br";
+type EdgeMid = "t" | "b" | "l" | "r";
+type DragKind = Corner | EdgeMid | "move";
 
-const CORNER_CURSOR: Record<Corner, string> = {
+const HANDLE_CURSOR: Record<Corner | EdgeMid, string> = {
   tl: "nwse-resize",
   br: "nwse-resize",
   tr: "nesw-resize",
   bl: "nesw-resize",
+  t: "ns-resize",
+  b: "ns-resize",
+  l: "ew-resize",
+  r: "ew-resize",
 };
+
+const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi);
 
 interface DragState {
   grainId: number;
-  corner: Corner;
+  kind: DragKind;
   startBboxImg: [number, number, number, number];
-  currentBboxImg: [number, number, number, number] | null;
-  rectEl: SVGRectElement;
-  handles: Record<Corner, SVGCircleElement>;
+  startPointerImg: { x: number; y: number };
 }
 
 interface Props {
@@ -65,11 +71,23 @@ export default function ImageViewer({
   const onSelectRef = useRef(onSelectGrain);
   const onBboxChangeRef = useRef(onGrainBboxChange);
   const dragStateRef = useRef<DragState | null>(null);
+  const pendingBboxRef = useRef<{ id: number; bbox: [number, number, number, number] } | null>(null);
+  const rafRef = useRef<number | null>(null);
   layerRef.current = layer;
   grainsRef.current = grains;
   selectedIdRef.current = selectedId;
   onSelectRef.current = onSelectGrain;
   onBboxChangeRef.current = onGrainBboxChange;
+
+  const clientToImagePoint = useCallback((clientX: number, clientY: number) => {
+    const viewer = viewerRef.current;
+    const osdEl = osdRef.current;
+    if (!viewer || !osdEl) return null;
+    const bounds = osdEl.getBoundingClientRect();
+    const localX = clientX - bounds.left;
+    const localY = clientY - bounds.top;
+    return viewer.viewport.viewerElementToImageCoordinates(new OpenSeadragon.Point(localX, localY));
+  }, []);
 
   const syncOpacities = useCallback(() => {
     const viewer = viewerRef.current;
@@ -148,107 +166,143 @@ export default function ImageViewer({
       rect.setAttribute("height", String(h));
       rect.setAttribute("stroke", grainColor(g).replace("0.7", "1"));
       rect.setAttribute("fill", grainColor(g));
-      if (g.id === selectedIdRef.current) rect.classList.add("selected");
+      const isSelected = g.id === selectedIdRef.current;
+      if (isSelected) rect.classList.add("selected");
       rect.addEventListener("click", (e) => {
         e.stopPropagation();
         onSelectRef.current(g.id);
       });
+
+      if (isSelected && onBboxChangeRef.current) {
+        rect.classList.add("grain-rect-movable");
+        rect.addEventListener("pointerdown", (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          const startPt = clientToImagePoint(e.clientX, e.clientY);
+          if (!startPt) return;
+          viewer.setMouseNavEnabled(false);
+          dragStateRef.current = {
+            grainId: g.id,
+            kind: "move",
+            startBboxImg: [bx, by, bw, bh],
+            startPointerImg: startPt,
+          };
+          svg.setPointerCapture(e.pointerId);
+        });
+      }
+
       svg.appendChild(rect);
 
-      if (g.id === selectedIdRef.current && onBboxChangeRef.current) {
-        const handles = {} as Record<Corner, SVGCircleElement>;
-        const corners: { key: Corner; cx: number; cy: number }[] = [
-          { key: "tl", cx: x, cy: y },
-          { key: "tr", cx: x + w, cy: y },
-          { key: "bl", cx: x, cy: y + h },
-          { key: "br", cx: x + w, cy: y + h },
-        ];
-        for (const { key, cx, cy } of corners) {
+      if (isSelected && onBboxChangeRef.current) {
+        const addHandle = (key: Corner | EdgeMid, cx: number, cy: number) => {
           const handle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
           handle.setAttribute("cx", String(cx));
           handle.setAttribute("cy", String(cy));
           handle.setAttribute("r", "6");
           handle.setAttribute("class", "grain-handle");
-          handle.style.cursor = CORNER_CURSOR[key];
+          handle.style.cursor = HANDLE_CURSOR[key];
           handle.addEventListener("pointerdown", (e) => {
             e.stopPropagation();
             e.preventDefault();
             viewer.setMouseNavEnabled(false);
             dragStateRef.current = {
               grainId: g.id,
-              corner: key,
+              kind: key,
               startBboxImg: [bx, by, bw, bh],
-              currentBboxImg: null,
-              rectEl: rect,
-              handles,
+              startPointerImg: { x: bx, y: by },
             };
             svg.setPointerCapture(e.pointerId);
           });
-          handles[key] = handle;
           svg.appendChild(handle);
-        }
+        };
+
+        addHandle("tl", x, y);
+        addHandle("tr", x + w, y);
+        addHandle("bl", x, y + h);
+        addHandle("br", x + w, y + h);
+        addHandle("t", x + w / 2, y);
+        addHandle("b", x + w / 2, y + h);
+        addHandle("l", x, y + h / 2);
+        addHandle("r", x + w, y + h / 2);
       }
     }
-  }, []);
+  }, [clientToImagePoint]);
 
   const handleSvgPointerMove = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
     const drag = dragStateRef.current;
-    const viewer = viewerRef.current;
-    const osdEl = osdRef.current;
-    if (!drag || !viewer || !osdEl) return;
-
-    const bounds = osdEl.getBoundingClientRect();
-    const localX = e.clientX - bounds.left;
-    const localY = e.clientY - bounds.top;
-    const viewport = viewer.viewport;
-    const imgPt = viewport.viewerElementToImageCoordinates(new OpenSeadragon.Point(localX, localY));
+    if (!drag) return;
+    const imgPt = clientToImagePoint(e.clientX, e.clientY);
+    if (!imgPt) return;
 
     const [ox, oy, ow, oh] = drag.startBboxImg;
-    let x0 = ox;
-    let y0 = oy;
-    let x1 = ox + ow;
-    let y1 = oy + oh;
-    if (drag.corner === "tl") {
-      x0 = imgPt.x;
-      y0 = imgPt.y;
-    } else if (drag.corner === "tr") {
-      x1 = imgPt.x;
-      y0 = imgPt.y;
-    } else if (drag.corner === "bl") {
-      x0 = imgPt.x;
-      y1 = imgPt.y;
+    let nx: number;
+    let ny: number;
+    let nw: number;
+    let nh: number;
+
+    if (drag.kind === "move") {
+      const dx = imgPt.x - drag.startPointerImg.x;
+      const dy = imgPt.y - drag.startPointerImg.y;
+      nw = ow;
+      nh = oh;
+      nx = clamp(ox + dx, 0, Math.max(0, imageWidth - nw));
+      ny = clamp(oy + dy, 0, Math.max(0, imageHeight - nh));
     } else {
-      x1 = imgPt.x;
-      y1 = imgPt.y;
+      let x0 = ox;
+      let y0 = oy;
+      let x1 = ox + ow;
+      let y1 = oy + oh;
+      switch (drag.kind) {
+        case "tl":
+          x0 = imgPt.x;
+          y0 = imgPt.y;
+          break;
+        case "tr":
+          x1 = imgPt.x;
+          y0 = imgPt.y;
+          break;
+        case "bl":
+          x0 = imgPt.x;
+          y1 = imgPt.y;
+          break;
+        case "br":
+          x1 = imgPt.x;
+          y1 = imgPt.y;
+          break;
+        case "t":
+          y0 = imgPt.y;
+          break;
+        case "b":
+          y1 = imgPt.y;
+          break;
+        case "l":
+          x0 = imgPt.x;
+          break;
+        case "r":
+          x1 = imgPt.x;
+          break;
+      }
+      nx = Math.min(x0, x1);
+      ny = Math.min(y0, y1);
+      nw = Math.max(4, Math.abs(x1 - x0));
+      nh = Math.max(4, Math.abs(y1 - y0));
     }
 
-    const nx = Math.min(x0, x1);
-    const ny = Math.min(y0, y1);
-    const nw = Math.max(4, Math.abs(x1 - x0));
-    const nh = Math.max(4, Math.abs(y1 - y0));
+    pendingBboxRef.current = {
+      id: drag.grainId,
+      bbox: [Math.round(nx), Math.round(ny), Math.round(nw), Math.round(nh)],
+    };
 
-    const ep1 = viewport.imageToViewerElementCoordinates(new OpenSeadragon.Point(nx, ny));
-    const ep2 = viewport.imageToViewerElementCoordinates(new OpenSeadragon.Point(nx + nw, ny + nh));
-    const ex = Math.min(ep1.x, ep2.x);
-    const ey = Math.min(ep1.y, ep2.y);
-    const ew = Math.max(Math.abs(ep2.x - ep1.x), 1);
-    const eh = Math.max(Math.abs(ep2.y - ep1.y), 1);
-
-    drag.rectEl.setAttribute("x", String(ex));
-    drag.rectEl.setAttribute("y", String(ey));
-    drag.rectEl.setAttribute("width", String(ew));
-    drag.rectEl.setAttribute("height", String(eh));
-    drag.handles.tl.setAttribute("cx", String(ex));
-    drag.handles.tl.setAttribute("cy", String(ey));
-    drag.handles.tr.setAttribute("cx", String(ex + ew));
-    drag.handles.tr.setAttribute("cy", String(ey));
-    drag.handles.bl.setAttribute("cx", String(ex));
-    drag.handles.bl.setAttribute("cy", String(ey + eh));
-    drag.handles.br.setAttribute("cx", String(ex + ew));
-    drag.handles.br.setAttribute("cy", String(ey + eh));
-
-    drag.currentBboxImg = [Math.round(nx), Math.round(ny), Math.round(nw), Math.round(nh)];
-  }, []);
+    // Coalesce updates to one per animation frame — pointermove can fire
+    // far more often than the SVG (up to MAX_SVG_GRAINS boxes) can redraw.
+    if (rafRef.current == null) {
+      rafRef.current = requestAnimationFrame(() => {
+        rafRef.current = null;
+        const pending = pendingBboxRef.current;
+        if (pending) onBboxChangeRef.current?.(pending.id, pending.bbox);
+      });
+    }
+  }, [clientToImagePoint, imageWidth, imageHeight]);
 
   const handleSvgPointerUp = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
     const drag = dragStateRef.current;
@@ -258,8 +312,14 @@ export default function ImageViewer({
     if (svgRef.current?.hasPointerCapture(e.pointerId)) {
       svgRef.current.releasePointerCapture(e.pointerId);
     }
-    if (drag.currentBboxImg) {
-      onBboxChangeRef.current?.(drag.grainId, drag.currentBboxImg);
+    if (rafRef.current != null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    const pending = pendingBboxRef.current;
+    pendingBboxRef.current = null;
+    if (pending && pending.id === drag.grainId) {
+      onBboxChangeRef.current?.(pending.id, pending.bbox);
     }
   }, []);
 
@@ -364,6 +424,10 @@ export default function ImageViewer({
       viewerRef.current = null;
       talcItemRef.current = null;
       typeItemRef.current = null;
+      if (rafRef.current != null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
     };
   }, [imageUrl, talcDisplayUrl, typeLayerUrl, addAlignedImage, refresh]);
 
