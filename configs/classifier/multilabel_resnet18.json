@@ -1,0 +1,34 @@
+{
+  "seed": 42,
+  "device": "auto",
+  "manifest_csv": "artifacts/manifests/multilabel_manifest.csv",
+  "run_dir": "artifacts/runs/multilabel_resnet18",
+  "run_name": "multilabel_resnet18_v1",
+  "tags": ["talc", "coarse", "fine"],
+  "threshold": 0.5,
+  "use_pos_weight": true,
+  "mlflow": {
+    "enabled": false
+  },
+  "data": {
+    "image_size": 384,
+    "batch_size": 16,
+    "num_workers": 0,
+    "use_weighted_sampler": true
+  },
+  "model": {
+    "name": "resnet18",
+    "pretrained": true,
+    "fallback": "small_cnn"
+  },
+  "optimizer": {
+    "name": "adamw",
+    "lr": 0.0003,
+    "weight_decay": 0.0001
+  },
+  "trainer": {
+    "epochs": 25,
+    "amp": true,
+    "early_stopping_patience": 6
+  }
+}

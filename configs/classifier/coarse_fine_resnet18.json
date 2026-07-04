@@ -1,0 +1,55 @@
+{
+  "seed": 42,
+  "device": "auto",
+  "manifest_csv": "artifacts/manifests/coarse_fine_manifest.csv",
+  "run_dir": "artifacts/runs/coarse_fine/resnet18_cosine",
+  "run_name": "coarse_fine_resnet18",
+  "mlflow": {
+    "enabled": false
+  },
+  "data": {
+    "image_size": 384,
+    "batch_size": 16,
+    "num_workers": 0,
+    "use_weighted_sampler": true,
+    "ambiguous_sampler_weight": 0.12
+  },
+  "augmentation": {
+    "resize_mode": "random_resized_crop",
+    "crop_scale": [0.72, 1.0],
+    "crop_ratio": [0.85, 1.18],
+    "hflip_p": 0.5,
+    "vflip_p": 0.25,
+    "rotation_deg": 15,
+    "brightness": 0.22,
+    "contrast": 0.26,
+    "saturation": 0.22,
+    "hue": 0.025,
+    "gamma": 0.15,
+    "gray_domain_p": 0.45,
+    "domain_strong_p": 0.30,
+    "blur_p": 0.14,
+    "noise_p": 0.22,
+    "jpeg_p": 0.16,
+    "cutout_p": 0.12
+  },
+  "model": {
+    "name": "resnet18",
+    "pretrained": true,
+    "fallback": "small_cnn"
+  },
+  "optimizer": {
+    "name": "adamw",
+    "lr": 0.0003,
+    "weight_decay": 0.0001
+  },
+  "scheduler": {
+    "name": "cosine",
+    "eta_min": 1e-6
+  },
+  "trainer": {
+    "epochs": 18,
+    "amp": true,
+    "early_stopping_patience": 5
+  }
+}

@@ -1,5 +1,4 @@
 models/weights/*.pt
-!models/weights/best_talk.pt
 
 # Large dataset copies (keep locally)
 dataset/source/
