@@ -9,6 +9,7 @@ ipykernel>=6.29
 jupyter>=1.0
 mlflow>=2.14
 segmentation-models-pytorch>=0.3.3
+ultralytics>=8.2
 
 # Ore Analyzer web app (FastAPI + Streamlit)
 fastapi>=0.110.0

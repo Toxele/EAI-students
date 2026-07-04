@@ -10,6 +10,7 @@ dataset/kaggle/talc_segmentation/masks/
 artifacts/
 dataset/
 spbgu_data/
+ore_detection_data/
 notebooks/**/outputs/
 __pycache__/
 *.pyc
