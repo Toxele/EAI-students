@@ -1,8 +1,7 @@
 """
-STUB: Сегментатор для детальных OM-снимков.
+STUB: fallback если весов нет.
 
-Сейчас: возвращает пустую маску талька и нулевые проценты.
-Потом: U-Net с классами sulfide / talc / matrix / gray.
+Production: app/models/talc_segmenter.py + models/weights/best_talk.pt
 """
 from __future__ import annotations
 

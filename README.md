@@ -88,42 +88,18 @@ python -m scripts.explain_classifier
 These overlays are weak explanations, not expert masks. Use them to inspect what
 the classifier relies on and to prioritize manual review.
 
-## Talc Segmentation Pipeline
-
-Extract blue-line weak masks:
+## Talc Segmentation (CVAT → Kaggle → app)
 
 ```bash
-python -m scripts.extract_weak_masks
+py scripts/import_cvat_annotations.py
+py scripts/build_kaggle_segmentation.py
 ```
 
-Build a balanced-ish talc segmentation dataset with zero-mask negative examples:
+Train on Kaggle: `kaggle/train_talc_segmentation.ipynb` → `best_talk.pt`
 
-```bash
-python -m scripts.build_talc_dataset
-```
+Put weights in `models/weights/best_talk.pt`. Inference: `app/models/talc_segmenter.py`
 
-By default this uses manual area masks from
-`artifacts/manual_masks/talk_lines/` as positive talc masks and adds zero-mask
-negative examples from ordinary/thin classification images. Weak masks are not
-mixed in unless `include_weak_fallback=true` is passed.
-
-Train the talc segmenter:
-
-```bash
-python -m scripts.train_talc_segmenter
-```
-
-Predict talc masks and estimated talc fractions:
-
-```bash
-python -m scripts.predict_talc_masks
-```
-
-Evaluate the talc segmenter on train/val, save overlays, and log metrics/artifacts to MLflow:
-
-```bash
-python -m scripts.evaluate_talc_segmenter --checkpoint artifacts/runs/talc_segmenter/best.pt --mlflow
-```
+ML deps: `pip install -r requirements-ml.txt`
 
 Generate a lightweight browser editor for manually closing missed talc contours:
 
