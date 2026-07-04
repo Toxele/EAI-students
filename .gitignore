@@ -13,6 +13,7 @@ results/
 # IDE / editor
 .idea/
 .cursor/
+.claude/
 
 # Frontend build
 web/node_modules/
