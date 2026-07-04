@@ -129,7 +129,7 @@ def build_pdf_bytes(
 
     # --- Слои (обзор, тальк, тип) ---
     layers = [
-        ("Обзор", overview_rgb or overlay_rgb),
+        ("Обзор", overview_rgb if overview_rgb is not None else overlay_rgb),
         ("Тальк", talc_layer_rgb),
         ("Тип сraстаний", type_layer_rgb),
     ]

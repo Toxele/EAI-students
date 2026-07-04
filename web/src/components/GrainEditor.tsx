@@ -30,7 +30,7 @@ export default function GrainEditor({ grain, onSave, saving }: Props) {
 
   if (!grain) {
     return (
-      <Paper p="md" radius="md" shadow="xs" withBorder>
+      <Paper p="md" radius="xl" shadow="xs" withBorder>
         <Group gap="sm" mb="xs">
           <ThemeIcon size="md" variant="light" color="gray" radius="md">
             <IconClick size={16} />
@@ -48,9 +48,9 @@ export default function GrainEditor({ grain, onSave, saving }: Props) {
   const [x, y, w, h] = grain.bbox;
 
   return (
-    <Paper p="md" radius="md" shadow="xs" withBorder>
+    <Paper p="md" radius="xl" shadow="xs" withBorder>
       <Group gap="sm" mb="md">
-        <ThemeIcon size="md" variant="light" color="indigo" radius="md">
+        <ThemeIcon size="md" variant="light" color="nornickel" radius="md">
           <IconEdit size={16} />
         </ThemeIcon>
         <Title order={5}>Зерно #{grain.id}</Title>
@@ -102,6 +102,7 @@ export default function GrainEditor({ grain, onSave, saving }: Props) {
 
       <Button
         fullWidth
+        radius="xl"
         loading={saving}
         onClick={() =>
           onSave(grain.id, currentStatus, [

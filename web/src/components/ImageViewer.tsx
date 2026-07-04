@@ -1,11 +1,29 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import OpenSeadragon from "openseadragon";
-import { Badge, Paper, ActionIcon, Tooltip, Group, Text } from "@mantine/core";
+import { Badge, Paper, ActionIcon, Tooltip, Group, Text, Loader } from "@mantine/core";
 import { IconPlus, IconMinus, IconZoomScan } from "@tabler/icons-react";
 import type { Grain, LayerMode } from "../types";
 import { absUrl, grainColor } from "../api";
 
 const MAX_SVG_GRAINS = 800;
+
+type Corner = "tl" | "tr" | "bl" | "br";
+
+const CORNER_CURSOR: Record<Corner, string> = {
+  tl: "nwse-resize",
+  br: "nwse-resize",
+  tr: "nesw-resize",
+  bl: "nesw-resize",
+};
+
+interface DragState {
+  grainId: number;
+  corner: Corner;
+  startBboxImg: [number, number, number, number];
+  currentBboxImg: [number, number, number, number] | null;
+  rectEl: SVGRectElement;
+  handles: Record<Corner, SVGCircleElement>;
+}
 
 interface Props {
   imageUrl: string;
@@ -17,6 +35,7 @@ interface Props {
   imageHeight: number;
   selectedId: number | null;
   onSelectGrain: (id: number | null) => void;
+  onGrainBboxChange?: (id: number, bbox: [number, number, number, number]) => void;
 }
 
 export default function ImageViewer({
@@ -29,6 +48,7 @@ export default function ImageViewer({
   imageHeight,
   selectedId,
   onSelectGrain,
+  onGrainBboxChange,
 }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const osdRef = useRef<HTMLDivElement>(null);
@@ -37,15 +57,19 @@ export default function ImageViewer({
   const talcItemRef = useRef<OpenSeadragon.TiledImage | null>(null);
   const typeItemRef = useRef<OpenSeadragon.TiledImage | null>(null);
   const [drawStats, setDrawStats] = useState({ drawn: 0, total: 0 });
+  const [talcLoading, setTalcLoading] = useState(false);
 
   const layerRef = useRef(layer);
   const grainsRef = useRef(grains);
   const selectedIdRef = useRef(selectedId);
   const onSelectRef = useRef(onSelectGrain);
+  const onBboxChangeRef = useRef(onGrainBboxChange);
+  const dragStateRef = useRef<DragState | null>(null);
   layerRef.current = layer;
   grainsRef.current = grains;
   selectedIdRef.current = selectedId;
   onSelectRef.current = onSelectGrain;
+  onBboxChangeRef.current = onGrainBboxChange;
 
   const syncOpacities = useCallback(() => {
     const viewer = viewerRef.current;
@@ -130,6 +154,112 @@ export default function ImageViewer({
         onSelectRef.current(g.id);
       });
       svg.appendChild(rect);
+
+      if (g.id === selectedIdRef.current && onBboxChangeRef.current) {
+        const handles = {} as Record<Corner, SVGCircleElement>;
+        const corners: { key: Corner; cx: number; cy: number }[] = [
+          { key: "tl", cx: x, cy: y },
+          { key: "tr", cx: x + w, cy: y },
+          { key: "bl", cx: x, cy: y + h },
+          { key: "br", cx: x + w, cy: y + h },
+        ];
+        for (const { key, cx, cy } of corners) {
+          const handle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+          handle.setAttribute("cx", String(cx));
+          handle.setAttribute("cy", String(cy));
+          handle.setAttribute("r", "6");
+          handle.setAttribute("class", "grain-handle");
+          handle.style.cursor = CORNER_CURSOR[key];
+          handle.addEventListener("pointerdown", (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            viewer.setMouseNavEnabled(false);
+            dragStateRef.current = {
+              grainId: g.id,
+              corner: key,
+              startBboxImg: [bx, by, bw, bh],
+              currentBboxImg: null,
+              rectEl: rect,
+              handles,
+            };
+            svg.setPointerCapture(e.pointerId);
+          });
+          handles[key] = handle;
+          svg.appendChild(handle);
+        }
+      }
+    }
+  }, []);
+
+  const handleSvgPointerMove = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
+    const drag = dragStateRef.current;
+    const viewer = viewerRef.current;
+    const osdEl = osdRef.current;
+    if (!drag || !viewer || !osdEl) return;
+
+    const bounds = osdEl.getBoundingClientRect();
+    const localX = e.clientX - bounds.left;
+    const localY = e.clientY - bounds.top;
+    const viewport = viewer.viewport;
+    const imgPt = viewport.viewerElementToImageCoordinates(new OpenSeadragon.Point(localX, localY));
+
+    const [ox, oy, ow, oh] = drag.startBboxImg;
+    let x0 = ox;
+    let y0 = oy;
+    let x1 = ox + ow;
+    let y1 = oy + oh;
+    if (drag.corner === "tl") {
+      x0 = imgPt.x;
+      y0 = imgPt.y;
+    } else if (drag.corner === "tr") {
+      x1 = imgPt.x;
+      y0 = imgPt.y;
+    } else if (drag.corner === "bl") {
+      x0 = imgPt.x;
+      y1 = imgPt.y;
+    } else {
+      x1 = imgPt.x;
+      y1 = imgPt.y;
+    }
+
+    const nx = Math.min(x0, x1);
+    const ny = Math.min(y0, y1);
+    const nw = Math.max(4, Math.abs(x1 - x0));
+    const nh = Math.max(4, Math.abs(y1 - y0));
+
+    const ep1 = viewport.imageToViewerElementCoordinates(new OpenSeadragon.Point(nx, ny));
+    const ep2 = viewport.imageToViewerElementCoordinates(new OpenSeadragon.Point(nx + nw, ny + nh));
+    const ex = Math.min(ep1.x, ep2.x);
+    const ey = Math.min(ep1.y, ep2.y);
+    const ew = Math.max(Math.abs(ep2.x - ep1.x), 1);
+    const eh = Math.max(Math.abs(ep2.y - ep1.y), 1);
+
+    drag.rectEl.setAttribute("x", String(ex));
+    drag.rectEl.setAttribute("y", String(ey));
+    drag.rectEl.setAttribute("width", String(ew));
+    drag.rectEl.setAttribute("height", String(eh));
+    drag.handles.tl.setAttribute("cx", String(ex));
+    drag.handles.tl.setAttribute("cy", String(ey));
+    drag.handles.tr.setAttribute("cx", String(ex + ew));
+    drag.handles.tr.setAttribute("cy", String(ey));
+    drag.handles.bl.setAttribute("cx", String(ex));
+    drag.handles.bl.setAttribute("cy", String(ey + eh));
+    drag.handles.br.setAttribute("cx", String(ex + ew));
+    drag.handles.br.setAttribute("cy", String(ey + eh));
+
+    drag.currentBboxImg = [Math.round(nx), Math.round(ny), Math.round(nw), Math.round(nh)];
+  }, []);
+
+  const handleSvgPointerUp = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
+    const drag = dragStateRef.current;
+    if (!drag) return;
+    dragStateRef.current = null;
+    viewerRef.current?.setMouseNavEnabled(true);
+    if (svgRef.current?.hasPointerCapture(e.pointerId)) {
+      svgRef.current.releasePointerCapture(e.pointerId);
+    }
+    if (drag.currentBboxImg) {
+      onBboxChangeRef.current?.(drag.grainId, drag.currentBboxImg);
     }
   }, []);
 
@@ -139,20 +269,32 @@ export default function ImageViewer({
   }, [syncOpacities, drawSvgBboxes]);
 
   const addAlignedImage = useCallback(
-    (viewer: OpenSeadragon.Viewer, url: string): Promise<OpenSeadragon.TiledImage | null> => {
+    (
+      viewer: OpenSeadragon.Viewer,
+      url: string,
+      preload = false
+    ): Promise<OpenSeadragon.TiledImage | null> => {
       const base = viewer.world.getItemAt(0);
       if (!base) return Promise.resolve(null);
       const b = base.getBounds();
 
       return new Promise((resolve) => {
         try {
+          // OpenSeadragon never loads tiles for opacity:0 images unless
+          // preload is set — without it, a hidden layer can never reach
+          // getFullyLoaded() and so can never be revealed.
+          //
+          // Only width is passed: OpenSeadragon derives height from the
+          // loaded image's own aspect ratio and logs an error if both are
+          // given (dropping height silently). Talc/type layers share the
+          // base image's aspect ratio, so width alone aligns them exactly.
           const ret = viewer.addSimpleImage({
             url: absUrl(url),
             x: b.x,
             y: b.y,
             width: b.width,
-            height: b.height,
             opacity: 0,
+            preload,
           }) as unknown;
 
           if (ret && typeof (ret as Promise<OpenSeadragon.TiledImage>).then === "function") {
@@ -194,10 +336,17 @@ export default function ImageViewer({
 
     viewer.addHandler("open", async () => {
       if (talcDisplayUrl && !talcItemRef.current) {
-        const item = await addAlignedImage(viewer, talcDisplayUrl);
+        setTalcLoading(true);
+        const item = await addAlignedImage(viewer, talcDisplayUrl, true);
         if (item) {
           talcItemRef.current = item;
-          item.addHandler("fully-loaded-change", () => refresh());
+          setTalcLoading(!item.getFullyLoaded());
+          item.addHandler("fully-loaded-change", () => {
+            setTalcLoading(!item.getFullyLoaded());
+            refresh();
+          });
+        } else {
+          setTalcLoading(false);
         }
       }
       if (typeLayerUrl && !typeItemRef.current) {
@@ -239,6 +388,9 @@ export default function ImageViewer({
         ref={svgRef}
         className={`viewer-overlay-svg${showSvg ? " is-active" : ""}`}
         aria-hidden={!showSvg}
+        onPointerMove={handleSvgPointerMove}
+        onPointerUp={handleSvgPointerUp}
+        onPointerCancel={handleSvgPointerUp}
       />
 
       <Paper className="viewer-controls" shadow="md" radius="md" p={4}>
@@ -256,7 +408,7 @@ export default function ImageViewer({
           <Tooltip label="Показать целиком" withArrow position="left">
             <ActionIcon
               variant="subtle"
-              color="indigo"
+              color="nornickel"
               size="lg"
               onClick={() => viewerRef.current?.viewport.goHome(true)}
             >
@@ -270,7 +422,12 @@ export default function ImageViewer({
         <Badge variant="light" color="gray" size="sm">
           {imageWidth}×{imageHeight}
         </Badge>
-        {layer === "talc" && (
+        {layer === "talc" && talcLoading && (
+          <Badge variant="light" color="blue" size="sm" leftSection={<Loader color="blue" size={10} />}>
+            слой талька загружается…
+          </Badge>
+        )}
+        {layer === "talc" && !talcLoading && (
           <Badge variant="light" color="blue" size="sm">
             слой: тальк
           </Badge>

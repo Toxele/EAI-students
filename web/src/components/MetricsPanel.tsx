@@ -45,40 +45,46 @@ export default function MetricsPanel({ result }: Props) {
 
   return (
     <Stack gap="md">
-      <Paper p="md" radius="md" shadow="xs" withBorder>
-        <Group gap="sm" mb="sm">
+      <Paper p="md" radius="xl" shadow="xs" withBorder>
+        <Group gap="sm" mb="sm" className="nn-section-title">
           <ThemeIcon size="md" variant="light" color={sortColor} radius="md">
             <IconDiamond size={16} />
           </ThemeIcon>
-          <Title order={5}>Итоговый сорт</Title>
+          <Title order={5} tt="uppercase" fz="sm">
+            Итоговый сорт
+          </Title>
         </Group>
-        <Badge size="lg" variant="light" color={sortColor} mb="xs">
+        <Badge size="lg" variant="light" color={sortColor} mb="xs" radius="sm">
           {result.sort_label_ru}
         </Badge>
-        <Text size="sm" c="dimmed" lh={1.5}>
+        <Text size="sm" c="dimmed" lh={1.5} className="nn-quote-bar">
           {result.conclusion.replace(/\*\*/g, "")}
         </Text>
       </Paper>
 
-      <Paper p="md" radius="md" shadow="xs" withBorder>
-        <Group gap="sm" mb="sm">
+      <Paper p="md" radius="xl" shadow="xs" withBorder>
+        <Group gap="sm" mb="sm" className="nn-section-title">
           <ThemeIcon size="md" variant="light" color="blue" radius="md">
             <IconLayersSubtract size={16} />
           </ThemeIcon>
-          <Title order={5}>Тальк</Title>
+          <Title order={5} tt="uppercase" fz="sm">
+            Тальк
+          </Title>
         </Group>
         <MetricRow label="Доля талька" value={talcStr} />
         <Text size="xs" c="dimmed" mt="xs">
-          На панораме: тёмные области → тальк (stub)
+          Заглушка модели — до подключения обученного классификатора
         </Text>
       </Paper>
 
-      <Paper p="md" radius="md" shadow="xs" withBorder>
-        <Group gap="sm" mb="sm">
-          <ThemeIcon size="md" variant="light" color="indigo" radius="md">
+      <Paper p="md" radius="xl" shadow="xs" withBorder>
+        <Group gap="sm" mb="sm" className="nn-section-title">
+          <ThemeIcon size="md" variant="light" color="nornickel" radius="md">
             <IconChartDots size={16} />
           </ThemeIcon>
-          <Title order={5}>Включения k / l / j</Title>
+          <Title order={5} tt="uppercase" fz="sm">
+            Включения k / l / j
+          </Title>
         </Group>
         <SimpleGrid cols={3} mb="sm">
           <Paper p="xs" radius="sm" bg="gray.0" ta="center">

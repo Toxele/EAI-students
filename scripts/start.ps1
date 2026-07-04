@@ -1,5 +1,6 @@
 # Запуск Nornickel Ore Analyzer (Windows)
-$Root = Split-Path -Parent $MyInvocation.MyCommand.Path
+$ScriptsDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$Root = Split-Path -Parent $ScriptsDir
 Set-Location $Root
 
 Write-Host "Starting API on http://127.0.0.1:8000 ..."

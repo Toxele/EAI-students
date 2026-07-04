@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useId } from "react";
 import {
   AppShell,
   Group,
@@ -24,7 +24,6 @@ import {
   IconFileTypePdf,
   IconFileTypeCsv,
   IconDownload,
-  IconMicroscope,
   IconAlertCircle,
 } from "@tabler/icons-react";
 import type { AnalysisResult, GrainStatus, LayerMode } from "./types";
@@ -38,6 +37,49 @@ const LAYER_OPTIONS = [
   { label: "Тальк", value: "talc" },
   { label: "Тип", value: "type" },
 ];
+
+// Nornickel corporate palette (Стандарт «Фирменный стиль», стр. 35):
+// синий Pantone 3005 = #0077C8, темно-синий Pantone 2945 = #004C97
+const BRAND_BLUE = "#004C97";
+const BRAND_ACCENT = "#0077C8";
+
+// Фирменный знак: два круга одинакового радиуса, центры на одной горизонтали,
+// расстояние между центрами равно радиусу (каждый круг проходит через центр
+// другого), диагональный разрез под ~34° в два фирменных оттенка синего
+// (стр. 9, 15). Белая плашка-подложка — как в примере «Иконка» (стр. 100),
+// обеспечивает контраст знака на цветном/тёмном фоне (правило стр. 18).
+function BrandMark({ size = 40 }: { size?: number }) {
+  const clipId = useId();
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 100 100"
+      style={{ flexShrink: 0 }}
+      role="img"
+      aria-label="Норникель"
+    >
+      <rect width="100" height="100" rx="18" ry="18" fill="#fff" />
+      <defs>
+        <clipPath id={clipId}>
+          <polygon points="87.5,0 100,0 100,100 12.5,100" />
+        </clipPath>
+      </defs>
+      <circle cx="36" cy="50" r="32" fill={BRAND_ACCENT} />
+      <circle cx="64" cy="50" r="32" fill={BRAND_BLUE} clipPath={`url(#${clipId})`} />
+    </svg>
+  );
+}
+
+// Декоративный элемент «лента» (стр. 26-30): непрерывная полоса с приподнятым
+// закруглённым сегментом, используется как тонкий фирменный акцент.
+function NornickelRibbon() {
+  return (
+    <div className="nn-ribbon">
+      <div className="nn-ribbon-bump" style={{ left: "30%", width: "22%" }} />
+    </div>
+  );
+}
 
 export default function App() {
   const [result, setResult] = useState<AnalysisResult | null>(null);
@@ -69,6 +111,19 @@ export default function App() {
       setLoading(false);
     }
   };
+
+  const handleGrainBboxChange = useCallback(
+    (id: number, bbox: [number, number, number, number]) => {
+      setResult((prev) => {
+        if (!prev) return prev;
+        const grains = prev.grains.map((g) =>
+          g.id === id ? { ...g, bbox, area: bbox[2] * bbox[3] } : g
+        );
+        return { ...prev, grains };
+      });
+    },
+    []
+  );
 
   const handleSaveGrain = useCallback(
     async (
@@ -113,23 +168,22 @@ export default function App() {
       footer={result ? { height: 56 } : undefined}
       padding="md"
       styles={{
-        main: { background: "#f4f6f9", display: "flex", flexDirection: "column" },
-        header: { background: "#fff", borderBottom: "1px solid #e9ecef" },
-        footer: { background: "#fff", borderTop: "1px solid #e9ecef" },
+        root: { height: "100vh" },
+        main: { background: "#f4f6fa", display: "flex", flexDirection: "column" },
+        header: { background: BRAND_BLUE, border: "none" },
+        footer: { background: BRAND_BLUE, border: "none" },
       }}
     >
       <AppShell.Header px="lg">
         <Group h="100%" justify="space-between" wrap="nowrap">
           <Group gap="sm">
-            <ThemeIcon size="lg" radius="md" variant="light" color="indigo">
-              <IconMicroscope size={20} />
-            </ThemeIcon>
+            <BrandMark />
             <div>
-              <Title order={4} lh={1.2}>
-                Nornickel Ore Analyzer
+              <Title order={4} lh={1.2} c="#fff" tt="uppercase" style={{ letterSpacing: 0.5 }}>
+                Норникель
               </Title>
-              <Text size="xs" c="dimmed">
-                Классификация руд по OM-фото
+              <Text size="xs" c="#B9CBEE">
+                Ore Analyzer · AI-анализ шлифов руды
               </Text>
             </div>
           </Group>
@@ -138,6 +192,7 @@ export default function App() {
             <Select
               w={160}
               size="sm"
+              radius="xl"
               value={mode}
               onChange={(v) => setMode(v ?? "auto")}
               data={[
@@ -154,6 +209,8 @@ export default function App() {
               onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
             />
             <Button
+              radius="xl"
+              color="nornickel.5"
               leftSection={<IconUpload size={16} />}
               onClick={() => fileRef.current?.click()}
               loading={loading}
@@ -172,7 +229,9 @@ export default function App() {
                 component="a"
                 href={absUrl(result.pdf_url)}
                 download
-                variant="light"
+                variant="outline"
+                color="#fff"
+                radius="xl"
                 leftSection={<IconFileTypePdf size={16} />}
                 size="sm"
               >
@@ -182,7 +241,9 @@ export default function App() {
                 component="a"
                 href={absUrl(result.labels_url!)}
                 download
-                variant="light"
+                variant="outline"
+                color="#fff"
+                radius="xl"
                 leftSection={<IconDownload size={16} />}
                 size="sm"
               >
@@ -192,7 +253,9 @@ export default function App() {
                 component="a"
                 href={absUrl(result.talc_layer_url!)}
                 download
-                variant="light"
+                variant="outline"
+                color="#fff"
+                radius="xl"
                 leftSection={<IconLayersLinked size={16} />}
                 size="sm"
               >
@@ -202,22 +265,26 @@ export default function App() {
                 component="a"
                 href={absUrl(result.csv_url!)}
                 download
-                variant="light"
+                variant="outline"
+                color="#fff"
+                radius="xl"
                 leftSection={<IconFileTypeCsv size={16} />}
                 size="sm"
               >
                 CSV
               </Button>
             </Group>
-            <Text size="sm" c="dimmed">
+            <Text size="sm" c="#B9CBEE">
               id: {result.result_id} · {result.mode} · {result.grains.length} зёрен
             </Text>
           </Group>
         </AppShell.Footer>
       )}
 
-      <AppShell.Main style={{ flex: 1, minHeight: 0 }}>
+      <AppShell.Main style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
         <Stack gap="md" h="100%">
+          <NornickelRibbon />
+
           {error && (
             <Alert
               icon={<IconAlertCircle size={16} />}
@@ -231,14 +298,15 @@ export default function App() {
           )}
 
           {result && (
-            <Paper p="sm" radius="md" shadow="xs" withBorder>
+            <Paper p="sm" radius="xl" shadow="xs" withBorder>
               <Group justify="space-between">
                 <SegmentedControl
                   value={layer}
                   onChange={(v) => setLayer(v as LayerMode)}
+                  radius="xl"
                   data={LAYER_OPTIONS}
                 />
-                <Badge variant="light" color="gray" size="lg">
+                <Badge variant="light" color="nornickel" size="lg" radius="sm">
                   {result.original_width}×{result.original_height}
                 </Badge>
               </Group>
@@ -250,7 +318,7 @@ export default function App() {
               {loading && (
                 <Overlay color="#fff" backgroundOpacity={0.7} zIndex={10}>
                   <Stack align="center" justify="center" h="100%" gap="sm">
-                    <Loader color="indigo" type="dots" />
+                    <Loader color="nornickel" type="dots" />
                     <Text c="dimmed">Анализ изображения…</Text>
                   </Stack>
                 </Overlay>
@@ -266,22 +334,23 @@ export default function App() {
                   imageHeight={result.original_height}
                   selectedId={selectedId}
                   onSelectGrain={setSelectedId}
+                  onGrainBboxChange={handleGrainBboxChange}
                 />
               ) : (
                 <Paper
                   h="100%"
-                  radius="md"
+                  radius="xl"
                   shadow="xs"
                   withBorder
                   style={{
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    background: "linear-gradient(135deg, #fff 0%, #f1f3f5 100%)",
+                    background: "linear-gradient(135deg, #fff 0%, #eaf4fc 100%)",
                   }}
                 >
                   <Stack align="center" gap="md" maw={420} ta="center" p="xl">
-                    <ThemeIcon size={64} radius="xl" variant="light" color="indigo">
+                    <ThemeIcon size={64} radius="xl" variant="light" color="nornickel">
                       <IconPhoto size={32} />
                     </ThemeIcon>
                     <Title order={3}>Загрузите изображение</Title>
@@ -290,6 +359,7 @@ export default function App() {
                       После анализа используйте zoom для деталей — на слое «Тип» можно править зёрна.
                     </Text>
                     <Button
+                      radius="xl"
                       leftSection={<IconUpload size={16} />}
                       onClick={() => fileRef.current?.click()}
                     >

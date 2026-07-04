@@ -9,9 +9,12 @@ from typing import Any
 import numpy as np
 from numpy.typing import NDArray
 
-from app.models.classifier_stub import ClassifierStub
-from app.models.panorama_grain_detector import Grain, PanoramaGrainDetector
-from app.models.panorama_talc_detector import PanoramaTalcDetector
+from app.models.fixed_output_stub import (
+    FixedOreClassifier,
+    FixedPanoramaGrainDetector,
+    FixedPanoramaTalcDetector,
+)
+from app.models.panorama_grain_detector import Grain
 from app.models.segmentation_stub import SegmentationStub
 from app.pipeline.metrics import enrich_grain, grain_confidence
 from app.pipeline.mode_detector import detect_mode
@@ -48,9 +51,12 @@ class Analyzer:
     """Точка входа pipeline. Три модели + talc detector для панорамы."""
 
     def __init__(self) -> None:
-        self.grain_detector = PanoramaGrainDetector()
-        self.talc_detector = PanoramaTalcDetector()
-        self.classifier = ClassifierStub()
+        # STUB: заглушка вывода модели — всегда одни и те же зёрна/маска
+        # (см. app/models/fixed_output_stub.py). Заменить на реальную
+        # модель nornikel_ore_classifier_3class без изменения интерфейса.
+        self.grain_detector = FixedPanoramaGrainDetector()
+        self.talc_detector = FixedPanoramaTalcDetector()
+        self.classifier = FixedOreClassifier()
         self.segmenter = SegmentationStub()
 
     def analyze(

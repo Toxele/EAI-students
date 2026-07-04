@@ -112,6 +112,11 @@ def analyze_upload(file_bytes: bytes, filename: str, mode_hint: str | None = Non
     scale_x = original_width / pw
     scale_y = original_height / ph
 
+    # Downscaled overview cached for fast redraws on the interactive
+    # corrections path — avoids re-decoding/re-encoding the full-res
+    # original (up to 10000x10000) on every grain edit.
+    _save_view_jpg(image_rgb, RESULTS_DIR / f"{result_id}_overview_view.jpg")
+
     report = analyzer.analyze(image_rgb, original_width, original_height, mode_hint=mode_hint)
 
     grains_orig = scale_grains_to_original(report.grains, scale_x, scale_y)
@@ -187,6 +192,48 @@ def analyze_upload(file_bytes: bytes, filename: str, mode_hint: str | None = Non
     return AnalysisResponse(**_state_to_response(state))
 
 
+def _scaled_bbox_for_view(bbox: list[int], scale_x: float, scale_y: float) -> list[int]:
+    x, y, w, h = bbox
+    return [
+        int(round(x / scale_x)),
+        int(round(y / scale_y)),
+        max(1, int(round(w / scale_x))),
+        max(1, int(round(h / scale_y))),
+    ]
+
+
+def _refresh_type_view(state: dict[str, Any]) -> None:
+    """
+    Быстрая перерисовка превью (interactive-путь).
+
+    Рисует bbox на закэшированном downscaled overview вместо полноразмерного
+    оригинала — иначе правка одного зерна на панораме 10000x10000 занимает
+    секунды на decode/redraw/encode.
+    """
+    result_id = state["result_id"]
+    view_path = RESULTS_DIR / f"{result_id}_overview_view.jpg"
+    if not view_path.is_file():
+        return
+    bgr = cv2.imread(str(view_path))
+    if bgr is None:
+        return
+    overview_rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
+
+    img = state.get("image", {})
+    scale_x = float(img.get("scale_x") or 1.0)
+    scale_y = float(img.get("scale_y") or 1.0)
+    view_grains = [
+        {
+            "status": g.get("status"),
+            "intergrowth_type": g.get("intergrowth_type"),
+            "bbox": _scaled_bbox_for_view(g["bbox"], scale_x, scale_y),
+        }
+        for g in state["grains"]
+    ]
+    type_layer = draw_type_layer(overview_rgb, view_grains)
+    save_overlay(type_layer, str(RESULTS_DIR / f"{result_id}_type_view.jpg"))
+
+
 def apply_grain_corrections(result_id: str, updates: list[dict[str, Any]]) -> CorrectionsResponse | None:
     state = load_state(result_id)
     if state is None:
@@ -194,23 +241,11 @@ def apply_grain_corrections(result_id: str, updates: list[dict[str, Any]]) -> Co
 
     state = apply_corrections(state, updates)
     save_state(state)
+    _refresh_type_view(state)
 
-    # Пересохраняем слои и labels после правок
-    upload_path = Path(state["upload_path"])
-    bgr = cv2.imdecode(np.fromfile(str(upload_path), dtype=np.uint8), cv2.IMREAD_COLOR)
-    if bgr is not None:
-        overview_rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
-        type_layer = draw_type_layer(overview_rgb, state["grains"])
-        save_overlay(type_layer, str(RESULTS_DIR / f"{result_id}_type_layer.jpg"))
-
-        talc_path = RESULTS_DIR / f"{result_id}_talc.png"
-        if talc_path.is_file():
-            talc_mask = cv2.imread(str(talc_path), cv2.IMREAD_GRAYSCALE)
-            if talc_mask is not None:
-                combined = draw_talc_layer(type_layer, talc_mask, alpha=0.35)
-                save_overlay(combined, str(RESULTS_DIR / f"{result_id}_overlay.jpg"))
-        else:
-            save_overlay(type_layer, str(RESULTS_DIR / f"{result_id}_overlay.jpg"))
+    # Полноразмерные слои (для PDF/`/overlay`) перерисовываются лениво, при
+    # запросе экспорта — не здесь, чтобы кнопка "Сохранить" не ждала обработку
+    # оригинала в полном разрешении.
 
     labels_path = RESULTS_DIR / f"{result_id}_labels.json"
     labels_path.write_text(
@@ -231,9 +266,37 @@ def apply_grain_corrections(result_id: str, updates: list[dict[str, Any]]) -> Co
     )
 
 
+def _load_original_rgb(state: dict[str, Any]) -> np.ndarray | None:
+    upload_path = Path(state["upload_path"])
+    if not upload_path.is_file():
+        return None
+    bgr = cv2.imdecode(np.fromfile(str(upload_path), dtype=np.uint8), cv2.IMREAD_COLOR)
+    return cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB) if bgr is not None else None
+
+
 def get_overlay_path(result_id: str) -> Path | None:
+    """
+    Полноразмерный overlay (тип + тальк) — рендерится по требованию из
+    актуального state, а не на каждой правке зерна (см. apply_grain_corrections).
+    """
     path = RESULTS_DIR / f"{result_id}_overlay.jpg"
-    return path if path.is_file() else None
+    state = load_state(result_id)
+    if state is None:
+        return path if path.is_file() else None
+
+    overview_rgb = _load_original_rgb(state)
+    if overview_rgb is None:
+        return path if path.is_file() else None
+
+    overlay = draw_type_layer(overview_rgb, state["grains"])
+    talc_path = RESULTS_DIR / f"{result_id}_talc.png"
+    if talc_path.is_file():
+        talc_mask = cv2.imread(str(talc_path), cv2.IMREAD_GRAYSCALE)
+        if talc_mask is not None:
+            overlay = draw_talc_layer(overlay, talc_mask, alpha=0.35)
+
+    save_overlay(overlay, str(path))
+    return path
 
 
 def get_original_image_path(result_id: str) -> Path | None:
@@ -271,6 +334,9 @@ def get_talc_colored_path(result_id: str) -> Path | None:
 
 
 def get_type_layer_path(result_id: str) -> Path | None:
+    view = RESULTS_DIR / f"{result_id}_type_view.jpg"
+    if view.is_file():
+        return view
     path = RESULTS_DIR / f"{result_id}_type_layer.jpg"
     return path if path.is_file() else None
 
@@ -317,12 +383,10 @@ def get_pdf_bytes(result_id: str) -> bytes | None:
         bgr = cv2.imread(str(p))
         return cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB) if bgr is not None else None
 
-    upload_path = Path(state["upload_path"])
-    overview_rgb = None
-    if upload_path.is_file():
-        bgr = cv2.imdecode(np.fromfile(str(upload_path), dtype=np.uint8), cv2.IMREAD_COLOR)
-        if bgr is not None:
-            overview_rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
+    overview_rgb = _load_original_rgb(state)
+    # type_layer.jpg на диске — снимок на момент анализа; тип-слой рисуем
+    # заново, чтобы PDF отражал правки зёрен, внесённые после анализа.
+    type_layer_rgb = draw_type_layer(overview_rgb, state["grains"]) if overview_rgb is not None else None
 
     return build_pdf_bytes(
         metrics=report_metrics,
@@ -330,6 +394,6 @@ def get_pdf_bytes(result_id: str) -> bytes | None:
         explanation=state.get("explanation", ""),
         overview_rgb=overview_rgb,
         talc_layer_rgb=_load_jpg("talc_layer"),
-        type_layer_rgb=_load_jpg("type_layer"),
+        type_layer_rgb=type_layer_rgb,
         counts=state.get("counts"),
     )
