@@ -1,4 +1,4 @@
-# Nornickel Ore Microscopy Toolkit
+# Head
 
 Small OOP pipeline for the hackathon data:
 
