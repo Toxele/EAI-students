@@ -21,6 +21,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--input", help="Image file or directory.")
     parser.add_argument("--name", help="Find image by filename under dataset/, e.g. -21.jpg.")
     parser.add_argument("--names", help="Comma-separated filenames under dataset/, e.g. -1.jpg,-10.jpg.")
+    parser.add_argument("--pattern", help="Optional filename glob filter, e.g. -*.jpg.")
     parser.add_argument("--output", default="notebooks/ore_detection_yolo/outputs/golden_ore_detector")
     parser.add_argument("--recursive", action="store_true", help="Scan input directory recursively.")
     parser.add_argument("--limit", type=int, default=0, help="Optional maximum number of images.")
@@ -72,7 +73,7 @@ def main() -> None:
         source_for_error = args.names
     else:
         input_path = Path(args.name or args.input)
-        image_paths = _collect_images(input_path, recursive=args.recursive)
+        image_paths = _collect_images(input_path, recursive=args.recursive, pattern=args.pattern)
         source_for_error = str(input_path)
     if args.limit > 0:
         image_paths = image_paths[: args.limit]
@@ -110,7 +111,7 @@ def main() -> None:
     print(f"Saved {len(report_rows)} detections to {output_dir}")
 
 
-def _collect_images(path: Path, recursive: bool) -> list[Path]:
+def _collect_images(path: Path, recursive: bool, pattern: str | None = None) -> list[Path]:
     """Collect image paths from a file or directory."""
     if path.is_file():
         return [path]
@@ -118,8 +119,12 @@ def _collect_images(path: Path, recursive: bool) -> list[Path]:
         matches = sorted(Path("dataset").rglob(path.name))
         if matches:
             return matches
-    pattern = "**/*" if recursive else "*"
-    return sorted(p for p in path.glob(pattern) if p.suffix.lower() in IMAGE_EXTENSIONS)
+    path_pattern = "**/*" if recursive else "*"
+    return sorted(
+        p
+        for p in path.glob(path_pattern)
+        if p.suffix.lower() in IMAGE_EXTENSIONS and (pattern is None or p.match(pattern))
+    )
 
 
 def _collect_named_images(names: list[str]) -> list[Path]:
@@ -137,7 +142,7 @@ def _normalize_dash_prefixed_values(argv: list[str]) -> list[str]:
     idx = 0
     while idx < len(argv):
         item = argv[idx]
-        if item in {"--input", "--name"} and idx + 1 < len(argv):
+        if item in {"--input", "--name", "--pattern"} and idx + 1 < len(argv):
             normalized.append(f"{item}={argv[idx + 1]}")
             idx += 2
             continue
