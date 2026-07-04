@@ -1,0 +1,15 @@
+{
+  "total": 63,
+  "train": 51,
+  "val": 12,
+  "kinds": {
+    "ch1_detail": {
+      "train": 41,
+      "val": 10
+    },
+    "panorama_tile": {
+      "train": 10,
+      "val": 2
+    }
+  }
+}

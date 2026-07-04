@@ -15,7 +15,7 @@ from app.models.fixed_output_stub import (
     FixedPanoramaTalcDetector,
 )
 from app.models.panorama_grain_detector import Grain
-from app.models.segmentation_stub import SegmentationStub
+from app.models.talc_segmenter import TalcSegmenter
 from app.pipeline.metrics import enrich_grain, grain_confidence
 from app.pipeline.mode_detector import detect_mode
 from app.pipeline.overlay import draw_grain_overlay, draw_talc_layer
@@ -51,13 +51,11 @@ class Analyzer:
     """Точка входа pipeline. Три модели + talc detector для панорамы."""
 
     def __init__(self) -> None:
-        # STUB: заглушка вывода модели — всегда одни и те же зёрна/маска
-        # (см. app/models/fixed_output_stub.py). Заменить на реальную
-        # модель nornikel_ore_classifier_3class без изменения интерфейса.
+        # STUB: зёрна/классификатор — fixed_output_stub; сегментатор — обученный Unet++.
         self.grain_detector = FixedPanoramaGrainDetector()
         self.talc_detector = FixedPanoramaTalcDetector()
         self.classifier = FixedOreClassifier()
-        self.segmenter = SegmentationStub()
+        self.segmenter = TalcSegmenter()
 
     def analyze(
         self,

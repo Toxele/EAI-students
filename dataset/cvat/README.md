@@ -1,22 +1,19 @@
-# CVAT export — manual talc annotation
+# CVAT export
 
-| Folder | Purpose |
-|--------|---------|
-| `to_annotate/` | Clean images for CVAT import (2020 files) |
-| `reference_blue/` | Same filenames with expert blue strokes (43 files) |
+| Folder | Files |
+|--------|-------|
+| `to_annotate/` | 1403 numbered images (`000001.jpg` …) |
+| `reference_blue/` | 43 same numbers where blue markup exists |
+| `manifest.csv` | id ↔ original filename ↔ source path |
 
-## Naming
+## How to use
 
-- `ch1__DSCN4708.JPG` — ch1 detail (2272×1704)
-- `ch2__58.JPG` — ch2 detail
-- `pano__4__r00_c03.jpg` — panorama tile (2272×1704), row/col grid
+1. Import **`to_annotate/`** into CVAT.
+2. On a second screen open **`reference_blue/000042.jpg`** for the same **`to_annotate/000042.jpg`** (only 42 ch1 files have a pair).
+3. After export from CVAT, merge labels back via **`manifest.csv`** (`id` / `original_filename` / `source_path`).
 
-Open `reference_blue/ch1__….JPG` on a second monitor while annotating the matching file in `to_annotate/`.
+Numbering order: ch1 → ch2 → panorama tiles (2× zoom-out vs ch1 detail).
 
-Panorama tiles have no blue reference.
+Panorama: each file → 16 tiles (4×4 grid), resized to 2272×1704. Order: pano 4, 5, … 17.
 
-## Rebuild
-
-```bash
-py scripts/prepare_cvat_export.py
-```
+Rebuild: `py scripts/prepare_cvat_export.py`
