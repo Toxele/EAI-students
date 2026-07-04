@@ -2,8 +2,9 @@
 Подготовка файлов для ручной разметки в CVAT.
 
 Создаёт dataset/cvat/:
-  to_annotate/   — чистые кадры (без синих линий) + тайлы панорам
-  reference_blue/ — те же имена, кадры с синей экспертной разметкой (где есть)
+  to_annotate/    — 000001.jpg, 000002.jpg, … (чистые кадры + тайлы панорам)
+  reference_blue/ — те же номера, где есть синяя экспертная разметка
+  manifest.csv    — связь номер ↔ оригинальное имя ↔ путь в source/
 
 Тайлы панорам: 2272×1704 px (как ch1 OM).
 
@@ -14,6 +15,7 @@ from __future__ import annotations
 import csv
 import shutil
 import sys
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import cv2
@@ -28,195 +30,228 @@ OUT = ROOT / "dataset" / "cvat"
 TO_ANNOTATE = OUT / "to_annotate"
 REFERENCE = OUT / "reference_blue"
 
-# Разрешение эталона (ch1 detail OM)
+# Выходной размер (как ch1 OM)
 TILE_W = 2272
 TILE_H = 1704
 
+# Каждую панораму — сетка 4×4 = 16 тайлов, каждый → TILE_W×TILE_H
+PANO_GRID = 4
 IMAGE_EXT = {".jpg", ".jpeg", ".png", ".tif", ".tiff"}
 
 
-def safe_name(prefix: str, filename: str) -> str:
-    """Уникальное имя файла в flat-папке."""
-    stem = Path(filename).stem
-    ext = Path(filename).suffix.lower()
-    if ext not in IMAGE_EXT:
-        ext = ".jpg"
-    return f"{prefix}__{stem}{ext}"
+@dataclass
+class ExportItem:
+    """Один файл для экспорта до присвоения номера."""
+
+    kind: str
+    original_filename: str
+    source_path: str
+    clean_src: Path
+    reference_src: Path | None = None
+    extra: dict = field(default_factory=dict)
 
 
-def copy_image(src: Path, dst: Path) -> None:
-    """Копирует или перекодирует изображение в dst."""
+def numbered_name(index: int) -> str:
+    """Имя файла для CVAT: 000001.jpg."""
+    return f"{index:06d}.jpg"
+
+
+def save_bgr(bgr, dst: Path) -> None:
+    """Сохраняет BGR как JPEG."""
     dst.parent.mkdir(parents=True, exist_ok=True)
+    cv2.imwrite(str(dst), bgr, [int(cv2.IMWRITE_JPEG_QUALITY), 95])
+
+
+def copy_as_jpeg(src: Path, dst: Path) -> None:
+    """Читает изображение и сохраняет как JPEG."""
     bgr = imread_unicode(src)
     if bgr is None:
         shutil.copy2(src, dst)
         return
-    cv2.imwrite(str(dst), bgr, [int(cv2.IMWRITE_JPEG_QUALITY), 95])
+    save_bgr(bgr, dst)
 
 
-def collect_ch1(source: Path) -> tuple[list[dict], dict[str, Path]]:
-    """
-    ch1: оригиналы без «Области оталькования».
-
-    :return: (строки manifest, map clean_name -> annotated path)
-    """
-    rows: list[dict] = []
-    annotated_by_name: dict[str, Path] = {}
-
+def scan_ch1(source: Path) -> list[ExportItem]:
+    """ch1 оригиналы без папки «Области оталькования»."""
+    items: list[ExportItem] = []
     ch1_root = source / "Фото руд по сортам. ч1"
     if not ch1_root.is_dir():
-        return rows, annotated_by_name
+        return items
 
+    annotated: dict[str, Path] = {}
     ann_dir = ch1_root / "Оталькованные руды" / "Области оталькования"
     if ann_dir.is_dir():
         for p in sorted(ann_dir.iterdir()):
             if p.suffix.lower() in IMAGE_EXT:
-                annotated_by_name[p.name] = p
+                annotated[p.name] = p
 
     for p in sorted(ch1_root.rglob("*")):
         if not p.is_file() or p.suffix.lower() not in IMAGE_EXT:
             continue
         if "Области оталькования" in p.as_posix():
             continue
-
-        out_name = safe_name("ch1", p.name)
-        rel = p.relative_to(source).as_posix()
-        dst = TO_ANNOTATE / out_name
-        copy_image(p, dst)
-
-        ref_name = ""
-        if p.name in annotated_by_name:
-            ref_out = REFERENCE / out_name
-            copy_image(annotated_by_name[p.name], ref_out)
-            ref_name = out_name
-
-        rows.append(
-            {
-                "filename": out_name,
-                "kind": "ch1_detail",
-                "source_path": rel,
-                "reference_blue": ref_name,
-            }
+        items.append(
+            ExportItem(
+                kind="ch1_detail",
+                original_filename=p.name,
+                source_path=p.relative_to(source).as_posix(),
+                clean_src=p,
+                reference_src=annotated.get(p.name),
+            )
         )
+    return items
 
-    return rows, annotated_by_name
 
-
-def collect_ch2(source: Path) -> list[dict]:
-    """ch2: все детальные кадры (синей разметки нет)."""
-    rows: list[dict] = []
+def scan_ch2(source: Path) -> list[ExportItem]:
+    """ch2 — все детальные кадры."""
+    items: list[ExportItem] = []
     ch2_root = source / "Фото руд по сортам. ч2"
     if not ch2_root.is_dir():
-        return rows
+        return items
 
     for p in sorted(ch2_root.rglob("*")):
         if not p.is_file() or p.suffix.lower() not in IMAGE_EXT:
             continue
-        out_name = safe_name("ch2", p.name)
-        copy_image(p, TO_ANNOTATE / out_name)
-        rows.append(
-            {
-                "filename": out_name,
-                "kind": "ch2_detail",
-                "source_path": p.relative_to(source).as_posix(),
-                "reference_blue": "",
-            }
+        items.append(
+            ExportItem(
+                kind="ch2_detail",
+                original_filename=p.name,
+                source_path=p.relative_to(source).as_posix(),
+                clean_src=p,
+            )
         )
-    return rows
+    return items
 
 
-def tile_panorama(src: Path, pano_stem: str) -> list[dict]:
-    """Режет панораму на тайлы TILE_W×TILE_H без перекрытия."""
-    rows: list[dict] = []
-    bgr = imread_unicode(src)
-    if bgr is None:
-        return rows
-
-    h, w = bgr.shape[:2]
-    row_idx = 0
-    for y in range(0, h - TILE_H + 1, TILE_H):
-        col_idx = 0
-        for x in range(0, w - TILE_W + 1, TILE_W):
-            tile = bgr[y : y + TILE_H, x : x + TILE_W]
-            out_name = f"pano__{pano_stem}__r{row_idx:02d}_c{col_idx:02d}.jpg"
-            cv2.imwrite(
-                str(TO_ANNOTATE / out_name),
-                tile,
-                [int(cv2.IMWRITE_JPEG_QUALITY), 95],
-            )
-            rows.append(
-                {
-                    "filename": out_name,
-                    "kind": "panorama_tile",
-                    "source_path": f"{src.relative_to(SOURCE).as_posix()} [{x},{y}]",
-                    "reference_blue": "",
-                }
-            )
-            col_idx += 1
-        row_idx += 1
-
-    return rows
+def _pano_sort_key(path: Path) -> tuple:
+    """Сортировка панорам: 4, 5, … 10, 11 (по числу в имени)."""
+    stem = path.stem
+    if stem.isdigit():
+        return (0, int(stem))
+    return (1, stem)
 
 
-def collect_panoramas(source: Path) -> list[dict]:
-    """Все панорамы → сетка тайлов."""
-    rows: list[dict] = []
+def scan_panorama_tiles(source: Path) -> list[ExportItem]:
+    """
+    Каждую панораму делит на 4×4 = 16 частей, ресайз каждой до TILE_W×TILE_H.
+    """
+    items: list[ExportItem] = []
     pano_root = source / "Панорамы"
     if not pano_root.is_dir():
-        return rows
+        return items
 
-    for p in sorted(pano_root.iterdir()):
-        if not p.is_file() or p.suffix.lower() not in IMAGE_EXT:
+    pano_files = sorted(
+        (p for p in pano_root.iterdir() if p.is_file() and p.suffix.lower() in IMAGE_EXT),
+        key=_pano_sort_key,
+    )
+
+    for pano_path in pano_files:
+        bgr = imread_unicode(pano_path)
+        if bgr is None:
             continue
-        rows.extend(tile_panorama(p, p.stem))
-    return rows
+
+        h, w = bgr.shape[:2]
+        pano_rel = pano_path.relative_to(source).as_posix()
+
+        for row in range(PANO_GRID):
+            y0 = row * h // PANO_GRID
+            y1 = (row + 1) * h // PANO_GRID
+            for col in range(PANO_GRID):
+                x0 = col * w // PANO_GRID
+                x1 = (col + 1) * w // PANO_GRID
+                crop = bgr[y0:y1, x0:x1]
+                tile = cv2.resize(crop, (TILE_W, TILE_H), interpolation=cv2.INTER_AREA)
+                orig = f"{pano_path.stem}_tile_r{row:02d}_c{col:02d}.jpg"
+                items.append(
+                    ExportItem(
+                        kind="panorama_tile",
+                        original_filename=orig,
+                        source_path=f"{pano_rel} grid {row},{col} of 4x4 px [{x0}:{x1},{y0}:{y1}]",
+                        clean_src=pano_path,
+                        extra={"tile_bgr": tile.copy()},
+                    )
+                )
+
+    return items
+
+
+def write_export(items: list[ExportItem]) -> list[dict]:
+    """
+    Присваивает номера, пишет файлы, возвращает строки manifest.
+
+    Порядок items = порядок номеров. reference_blue использует тот же номер.
+    """
+    manifest: list[dict] = []
+
+    for idx, item in enumerate(items, start=1):
+        cvat_name = numbered_name(idx)
+        clean_dst = TO_ANNOTATE / cvat_name
+
+        if item.kind == "panorama_tile" and "tile_bgr" in item.extra:
+            save_bgr(item.extra["tile_bgr"], clean_dst)
+        else:
+            copy_as_jpeg(item.clean_src, clean_dst)
+
+        ref_name = ""
+        ref_source = ""
+        if item.reference_src is not None:
+            ref_name = cvat_name
+            ref_source = item.reference_src.relative_to(SOURCE).as_posix()
+            copy_as_jpeg(item.reference_src, REFERENCE / cvat_name)
+
+        manifest.append(
+            {
+                "id": idx,
+                "cvat_filename": cvat_name,
+                "original_filename": item.original_filename,
+                "kind": item.kind,
+                "source_path": item.source_path,
+                "has_reference_blue": "yes" if ref_name else "no",
+                "reference_source_path": ref_source,
+            }
+        )
+
+    return manifest
 
 
 def remove_auto_markup_junk() -> None:
-    """Удаляет артеfacts автоматической разметки талька."""
-    junk_dirs = [
-        ROOT / "dataset" / "talc_segmentation" / "masks",
-        ROOT / "dataset" / "talc_segmentation" / "validation",
-        ROOT / "dataset" / "talc_segmentation" / "annotated",
-        ROOT / "dataset" / "talc_segmentation" / "images",
+    """Удаляет артеfacts автоматической разметки."""
+    for path in [
+        ROOT / "dataset" / "talc_segmentation",
         ROOT / "data_organized",
-    ]
-    for path in junk_dirs:
+    ]:
         if path.is_dir():
             shutil.rmtree(path, ignore_errors=True)
 
 
-def write_readme(manifest_rows: list[dict]) -> None:
-    """Короткая подпись к cvat/."""
-    n_ref = sum(1 for r in manifest_rows if r["reference_blue"])
-    text = f"""# CVAT export — manual talc annotation
+def write_readme(manifest: list[dict]) -> None:
+    """Короткая подпись."""
+    n_ref = sum(1 for r in manifest if r["has_reference_blue"] == "yes")
+    text = f"""# CVAT export
 
-| Folder | Purpose |
-|--------|---------|
-| `to_annotate/` | Clean images for CVAT import ({len(manifest_rows)} files) |
-| `reference_blue/` | Same filenames with expert blue strokes ({n_ref} files) |
+| Folder | Files |
+|--------|-------|
+| `to_annotate/` | {len(manifest)} numbered images (`000001.jpg` …) |
+| `reference_blue/` | {n_ref} same numbers where blue markup exists |
+| `manifest.csv` | id ↔ original filename ↔ source path |
 
-## Naming
+## How to use
 
-- `ch1__DSCN4708.JPG` — ch1 detail (2272×1704)
-- `ch2__58.JPG` — ch2 detail
-- `pano__4__r00_c03.jpg` — panorama tile (2272×1704), row/col grid
+1. Import **`to_annotate/`** into CVAT.
+2. On a second screen open **`reference_blue/000042.jpg`** for the same **`to_annotate/000042.jpg`** (only 42 ch1 files have a pair).
+3. After export from CVAT, merge labels back via **`manifest.csv`** (`id` / `original_filename` / `source_path`).
 
-Open `reference_blue/ch1__….JPG` on a second monitor while annotating the matching file in `to_annotate/`.
+Numbering order: ch1 → ch2 → panorama tiles (2× zoom-out vs ch1 detail).
 
-Panorama tiles have no blue reference.
+Panorama: each file → 16 tiles (4×4 grid), resized to 2272×1704. Order: pano 4, 5, … 17.
 
-## Rebuild
-
-```bash
-py scripts/prepare_cvat_export.py
-```
+Rebuild: `py scripts/prepare_cvat_export.py`
 """
     (OUT / "README.md").write_text(text, encoding="utf-8")
 
 
 def main() -> None:
-    """Собирает cvat/ и пишет manifest.csv."""
+    """Собирает cvat/."""
     if not SOURCE.is_dir():
         raise SystemExit("Run build_dataset.py first (dataset/source/ missing).")
 
@@ -227,25 +262,33 @@ def main() -> None:
     TO_ANNOTATE.mkdir(parents=True)
     REFERENCE.mkdir(parents=True)
 
-    manifest: list[dict] = []
-    manifest.extend(collect_ch1(SOURCE)[0])
-    manifest.extend(collect_ch2(SOURCE))
-    manifest.extend(collect_panoramas(SOURCE))
+    items: list[ExportItem] = []
+    items.extend(scan_ch1(SOURCE))
+    items.extend(scan_ch2(SOURCE))
+    items.extend(scan_panorama_tiles(SOURCE))
 
+    manifest = write_export(items)
+
+    fields = [
+        "id",
+        "cvat_filename",
+        "original_filename",
+        "kind",
+        "source_path",
+        "has_reference_blue",
+        "reference_source_path",
+    ]
     with (OUT / "manifest.csv").open("w", encoding="utf-8-sig", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=["filename", "kind", "source_path", "reference_blue"])
+        writer = csv.DictWriter(handle, fieldnames=fields)
         writer.writeheader()
         writer.writerows(manifest)
 
     write_readme(manifest)
 
-    kinds = {}
-    for row in manifest:
-        kinds[row["kind"]] = kinds.get(row["kind"], 0) + 1
-
-    print(f"to_annotate: {len(list(TO_ANNOTATE.iterdir()))} files")
-    print(f"reference_blue: {len(list(REFERENCE.iterdir()))} files")
-    print("by kind:", kinds)
+    n_ref = sum(1 for r in manifest if r["has_reference_blue"] == "yes")
+    print(f"to_annotate: {len(manifest)}")
+    print(f"reference_blue: {n_ref}")
+    print(f"manifest: {OUT / 'manifest.csv'}")
     print(f"Output: {OUT}")
 
 

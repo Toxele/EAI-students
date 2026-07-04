@@ -3,6 +3,7 @@
 from app.models.classifier_stub import ClassifierStub, ClassificationResult
 from app.models.panorama_grain_detector import Grain, PanoramaGrainDetector
 from app.models.segmentation_stub import SegmentationResult, SegmentationStub
+from app.models.talc_segmenter import TalcSegmenter
 
 __all__ = [
     "PanoramaGrainDetector",
@@ -11,4 +12,5 @@ __all__ = [
     "ClassificationResult",
     "SegmentationStub",
     "SegmentationResult",
+    "TalcSegmenter",
 ]

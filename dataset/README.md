@@ -9,8 +9,9 @@ Clean copy of `data/` with English folder labels for ML.
 | `source/` | Full mirror of `data/` (all files, all paths) |
 | `classification/` | One canonical image per MD5, sorted by compound folder |
 | `talc_segmentation/` | *(removed)* — use `cvat/` for manual annotation |
-| `cvat/` | **CVAT import:** `to_annotate/` + `reference_blue/` |
-| `index/` | `paths.csv`, `manifest.csv`, `by_md5.json`, `talc_pairs.csv`, `summary.json` |
+| `cvat/` | CVAT export для разметки |
+| `kaggle/` | zip для Kaggle + развернутый `talc_segmentation/` |
+| `annotations/` | CVAT XML + organized masks |
 
 ## Folder names (`classification/`)
 
@@ -25,7 +26,8 @@ Mapping: ch1 row ore ↔ ch2 intergrowth (`рядовые`→`coarse`, `тонк
 
 ```bash
 py scripts/build_dataset.py
-py scripts/prepare_cvat_export.py
+py scripts/import_cvat_annotations.py
+py scripts/build_kaggle_segmentation.py
 ```
 
 After rebuild you can remove `data/`.

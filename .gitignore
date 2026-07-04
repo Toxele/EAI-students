@@ -1,5 +1,13 @@
-# ML pipeline
-kaggle_notebooks/
+models/weights/*.pt
+!models/weights/best_talk.pt
+
+# Large dataset copies (keep locally)
+dataset/source/
+dataset/classification/
+dataset/cvat/to_annotate/
+dataset/cvat/reference_blue/
+dataset/kaggle/talc_segmentation/images/
+dataset/kaggle/talc_segmentation/masks/
 artifacts/
 dataset/
 spbgu_data/

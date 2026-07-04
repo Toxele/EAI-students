@@ -1,0 +1,264 @@
+﻿source_export,cvat_filename,id,original_filename,kind,source_path,class,polygon_index,vertices,area_px,talc_percent_image,mask_file,overlay_file
+job_4195731,001180.jpg,1180,4_tile_r00_c00.jpg,panorama_tile,"Панорамы/4.jpg grid 0,0 of 4x4 px [0:3428,0:2699]",talc,1,40,112882.0,14.81,masks\job_4195731__001180.png,overlays\job_4195731__001180.jpg
+job_4195731,001180.jpg,1180,4_tile_r00_c00.jpg,panorama_tile,"Панорамы/4.jpg grid 0,0 of 4x4 px [0:3428,0:2699]",talc,2,87,256438.5,14.81,masks\job_4195731__001180.png,overlays\job_4195731__001180.jpg
+job_4195731,001180.jpg,1180,4_tile_r00_c00.jpg,panorama_tile,"Панорамы/4.jpg grid 0,0 of 4x4 px [0:3428,0:2699]",talc,3,30,51419.0,14.81,masks\job_4195731__001180.png,overlays\job_4195731__001180.jpg
+job_4195731,001180.jpg,1180,4_tile_r00_c00.jpg,panorama_tile,"Панорамы/4.jpg grid 0,0 of 4x4 px [0:3428,0:2699]",talc,4,56,81633.0,14.81,masks\job_4195731__001180.png,overlays\job_4195731__001180.jpg
+job_4195731,001180.jpg,1180,4_tile_r00_c00.jpg,panorama_tile,"Панорамы/4.jpg grid 0,0 of 4x4 px [0:3428,0:2699]",talc,5,34,35551.0,14.81,masks\job_4195731__001180.png,overlays\job_4195731__001180.jpg
+job_4195731,001180.jpg,1180,4_tile_r00_c00.jpg,panorama_tile,"Панорамы/4.jpg grid 0,0 of 4x4 px [0:3428,0:2699]",talc,6,24,23112.5,14.81,masks\job_4195731__001180.png,overlays\job_4195731__001180.jpg
+job_4195731,001180.jpg,1180,4_tile_r00_c00.jpg,panorama_tile,"Панорамы/4.jpg grid 0,0 of 4x4 px [0:3428,0:2699]",talc,7,9,8456.5,14.81,masks\job_4195731__001180.png,overlays\job_4195731__001180.jpg
+job_4195731,001181.jpg,1181,4_tile_r00_c01.jpg,panorama_tile,"Панорамы/4.jpg grid 0,1 of 4x4 px [3428:6856,0:2699]",talc,1,134,274304.0,15.63,masks\job_4195731__001181.png,overlays\job_4195731__001181.jpg
+job_4195731,001181.jpg,1181,4_tile_r00_c01.jpg,panorama_tile,"Панорамы/4.jpg grid 0,1 of 4x4 px [3428:6856,0:2699]",talc,2,95,251217.0,15.63,masks\job_4195731__001181.png,overlays\job_4195731__001181.jpg
+job_4195731,001181.jpg,1181,4_tile_r00_c01.jpg,panorama_tile,"Панорамы/4.jpg grid 0,1 of 4x4 px [3428:6856,0:2699]",talc,3,36,75882.0,15.63,masks\job_4195731__001181.png,overlays\job_4195731__001181.jpg
+job_4195731,001182.jpg,1182,4_tile_r00_c02.jpg,panorama_tile,"Панорамы/4.jpg grid 0,2 of 4x4 px [6856:10284,0:2699]",talc,1,56,234604.0,27.35,masks\job_4195731__001182.png,overlays\job_4195731__001182.jpg
+job_4195731,001182.jpg,1182,4_tile_r00_c02.jpg,panorama_tile,"Панорамы/4.jpg grid 0,2 of 4x4 px [6856:10284,0:2699]",talc,2,46,125722.0,27.35,masks\job_4195731__001182.png,overlays\job_4195731__001182.jpg
+job_4195731,001182.jpg,1182,4_tile_r00_c02.jpg,panorama_tile,"Панорамы/4.jpg grid 0,2 of 4x4 px [6856:10284,0:2699]",talc,3,41,86344.0,27.35,masks\job_4195731__001182.png,overlays\job_4195731__001182.jpg
+job_4195731,001182.jpg,1182,4_tile_r00_c02.jpg,panorama_tile,"Панорамы/4.jpg grid 0,2 of 4x4 px [6856:10284,0:2699]",talc,4,48,70903.5,27.35,masks\job_4195731__001182.png,overlays\job_4195731__001182.jpg
+job_4195731,001182.jpg,1182,4_tile_r00_c02.jpg,panorama_tile,"Панорамы/4.jpg grid 0,2 of 4x4 px [6856:10284,0:2699]",talc,5,55,302885.0,27.35,masks\job_4195731__001182.png,overlays\job_4195731__001182.jpg
+job_4195731,001182.jpg,1182,4_tile_r00_c02.jpg,panorama_tile,"Панорамы/4.jpg grid 0,2 of 4x4 px [6856:10284,0:2699]",talc,6,53,182499.5,27.35,masks\job_4195731__001182.png,overlays\job_4195731__001182.jpg
+job_4195731,001182.jpg,1182,4_tile_r00_c02.jpg,panorama_tile,"Панорамы/4.jpg grid 0,2 of 4x4 px [6856:10284,0:2699]",talc,7,40,50820.0,27.35,masks\job_4195731__001182.png,overlays\job_4195731__001182.jpg
+job_4195731,001183.jpg,1183,4_tile_r00_c03.jpg,panorama_tile,"Панорамы/4.jpg grid 0,3 of 4x4 px [10284:13712,0:2699]",talc,1,17,83762.5,20.28,masks\job_4195731__001183.png,overlays\job_4195731__001183.jpg
+job_4195731,001183.jpg,1183,4_tile_r00_c03.jpg,panorama_tile,"Панорамы/4.jpg grid 0,3 of 4x4 px [10284:13712,0:2699]",talc,2,57,84416.5,20.28,masks\job_4195731__001183.png,overlays\job_4195731__001183.jpg
+job_4195731,001183.jpg,1183,4_tile_r00_c03.jpg,panorama_tile,"Панорамы/4.jpg grid 0,3 of 4x4 px [10284:13712,0:2699]",talc,3,70,415904.5,20.28,masks\job_4195731__001183.png,overlays\job_4195731__001183.jpg
+job_4195731,001183.jpg,1183,4_tile_r00_c03.jpg,panorama_tile,"Панорамы/4.jpg grid 0,3 of 4x4 px [10284:13712,0:2699]",talc,4,26,53322.0,20.28,masks\job_4195731__001183.png,overlays\job_4195731__001183.jpg
+job_4195731,001183.jpg,1183,4_tile_r00_c03.jpg,panorama_tile,"Панорамы/4.jpg grid 0,3 of 4x4 px [10284:13712,0:2699]",talc,5,30,36755.5,20.28,masks\job_4195731__001183.png,overlays\job_4195731__001183.jpg
+job_4195731,001183.jpg,1183,4_tile_r00_c03.jpg,panorama_tile,"Панорамы/4.jpg grid 0,3 of 4x4 px [10284:13712,0:2699]",talc,6,31,67450.5,20.28,masks\job_4195731__001183.png,overlays\job_4195731__001183.jpg
+job_4195731,001183.jpg,1183,4_tile_r00_c03.jpg,panorama_tile,"Панорамы/4.jpg grid 0,3 of 4x4 px [10284:13712,0:2699]",talc,7,22,40221.0,20.28,masks\job_4195731__001183.png,overlays\job_4195731__001183.jpg
+job_4195731,001184.jpg,1184,4_tile_r01_c00.jpg,panorama_tile,"Панорамы/4.jpg grid 1,0 of 4x4 px [0:3428,2699:5399]",talc,1,20,95282.0,6.78,masks\job_4195731__001184.png,overlays\job_4195731__001184.jpg
+job_4195731,001184.jpg,1184,4_tile_r01_c00.jpg,panorama_tile,"Панорамы/4.jpg grid 1,0 of 4x4 px [0:3428,2699:5399]",talc,2,27,63822.5,6.78,masks\job_4195731__001184.png,overlays\job_4195731__001184.jpg
+job_4195731,001184.jpg,1184,4_tile_r01_c00.jpg,panorama_tile,"Панорамы/4.jpg grid 1,0 of 4x4 px [0:3428,2699:5399]",talc,3,26,102325.5,6.78,masks\job_4195731__001184.png,overlays\job_4195731__001184.jpg
+job_4195731,001185.jpg,1185,4_tile_r01_c01.jpg,panorama_tile,"Панорамы/4.jpg grid 1,1 of 4x4 px [3428:6856,2699:5399]",talc,1,25,56947.5,1.48,masks\job_4195731__001185.png,overlays\job_4195731__001185.jpg
+job_4195731,001186.jpg,1186,4_tile_r01_c02.jpg,panorama_tile,"Панорамы/4.jpg grid 1,2 of 4x4 px [6856:10284,2699:5399]",talc,1,54,218759.0,6.55,masks\job_4195731__001186.png,overlays\job_4195731__001186.jpg
+job_4195731,001186.jpg,1186,4_tile_r01_c02.jpg,panorama_tile,"Панорамы/4.jpg grid 1,2 of 4x4 px [6856:10284,2699:5399]",talc,2,15,33679.0,6.55,masks\job_4195731__001186.png,overlays\job_4195731__001186.jpg
+job_4195731,001187.jpg,1187,4_tile_r01_c03.jpg,panorama_tile,"Панорамы/4.jpg grid 1,3 of 4x4 px [10284:13712,2699:5399]",talc,1,131,870862.0,22.56,masks\job_4195731__001187.png,overlays\job_4195731__001187.jpg
+job_4195731,001188.jpg,1188,4_tile_r02_c00.jpg,panorama_tile,"Панорамы/4.jpg grid 2,0 of 4x4 px [0:3428,5399:8098]",talc,1,48,370633.5,12.67,masks\job_4195731__001188.png,overlays\job_4195731__001188.jpg
+job_4195731,001188.jpg,1188,4_tile_r02_c00.jpg,panorama_tile,"Панорамы/4.jpg grid 2,0 of 4x4 px [0:3428,5399:8098]",talc,2,43,117856.0,12.67,masks\job_4195731__001188.png,overlays\job_4195731__001188.jpg
+job_4195731,001189.jpg,1189,4_tile_r02_c01.jpg,panorama_tile,"Панорамы/4.jpg grid 2,1 of 4x4 px [3428:6856,5399:8098]",talc,1,102,711505.5,25.08,masks\job_4195731__001189.png,overlays\job_4195731__001189.jpg
+job_4195731,001189.jpg,1189,4_tile_r02_c01.jpg,panorama_tile,"Панорамы/4.jpg grid 2,1 of 4x4 px [3428:6856,5399:8098]",talc,2,57,256284.0,25.08,masks\job_4195731__001189.png,overlays\job_4195731__001189.jpg
+job_4195731,001190.jpg,1190,4_tile_r02_c02.jpg,panorama_tile,"Панорамы/4.jpg grid 2,2 of 4x4 px [6856:10284,5399:8098]",talc,1,92,855279.5,25.05,masks\job_4195731__001190.png,overlays\job_4195731__001190.jpg
+job_4195731,001190.jpg,1190,4_tile_r02_c02.jpg,panorama_tile,"Панорамы/4.jpg grid 2,2 of 4x4 px [6856:10284,5399:8098]",talc,2,41,111484.0,25.05,masks\job_4195731__001190.png,overlays\job_4195731__001190.jpg
+job_4195731,001191.jpg,1191,4_tile_r02_c03.jpg,panorama_tile,"Панорамы/4.jpg grid 2,3 of 4x4 px [10284:13712,5399:8098]",talc,1,34,142651.0,7.79,masks\job_4195731__001191.png,overlays\job_4195731__001191.jpg
+job_4195731,001191.jpg,1191,4_tile_r02_c03.jpg,panorama_tile,"Панорамы/4.jpg grid 2,3 of 4x4 px [10284:13712,5399:8098]",talc,2,30,158101.0,7.79,masks\job_4195731__001191.png,overlays\job_4195731__001191.jpg
+task_2398159,000001.jpg,1,2550374-2 10х.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550374-2 10х.JPG,talc,1,8,71233.0,40.35,masks\task_2398159__000001.png,overlays\task_2398159__000001.jpg
+task_2398159,000001.jpg,1,2550374-2 10х.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550374-2 10х.JPG,talc,2,5,165734.0,40.35,masks\task_2398159__000001.png,overlays\task_2398159__000001.jpg
+task_2398159,000001.jpg,1,2550374-2 10х.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550374-2 10х.JPG,talc,3,33,992817.0,40.35,masks\task_2398159__000001.png,overlays\task_2398159__000001.jpg
+task_2398159,000001.jpg,1,2550374-2 10х.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550374-2 10х.JPG,talc,4,27,203995.0,40.35,masks\task_2398159__000001.png,overlays\task_2398159__000001.jpg
+task_2398159,000001.jpg,1,2550374-2 10х.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550374-2 10х.JPG,talc,5,10,124669.0,40.35,masks\task_2398159__000001.png,overlays\task_2398159__000001.jpg
+task_2398159,000002.jpg,2,2550375-1 10х.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550375-1 10х.JPG,talc,1,17,262373.0,43.71,masks\task_2398159__000002.png,overlays\task_2398159__000002.jpg
+task_2398159,000002.jpg,2,2550375-1 10х.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550375-1 10х.JPG,talc,2,15,54191.0,43.71,masks\task_2398159__000002.png,overlays\task_2398159__000002.jpg
+task_2398159,000002.jpg,2,2550375-1 10х.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550375-1 10х.JPG,talc,3,24,176827.0,43.71,masks\task_2398159__000002.png,overlays\task_2398159__000002.jpg
+task_2398159,000002.jpg,2,2550375-1 10х.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550375-1 10х.JPG,talc,4,166,1195891.5,43.71,masks\task_2398159__000002.png,overlays\task_2398159__000002.jpg
+task_2398159,000003.jpg,3,2550375-3 5х.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550375-3 5х.JPG,talc,1,37,159168.5,18.89,masks\task_2398159__000003.png,overlays\task_2398159__000003.jpg
+task_2398159,000003.jpg,3,2550375-3 5х.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550375-3 5х.JPG,talc,2,22,57077.0,18.89,masks\task_2398159__000003.png,overlays\task_2398159__000003.jpg
+task_2398159,000003.jpg,3,2550375-3 5х.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550375-3 5х.JPG,talc,3,53,66263.0,18.89,masks\task_2398159__000003.png,overlays\task_2398159__000003.jpg
+task_2398159,000003.jpg,3,2550375-3 5х.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550375-3 5х.JPG,talc,4,62,69590.5,18.89,masks\task_2398159__000003.png,overlays\task_2398159__000003.jpg
+task_2398159,000003.jpg,3,2550375-3 5х.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550375-3 5х.JPG,talc,5,45,86672.0,18.89,masks\task_2398159__000003.png,overlays\task_2398159__000003.jpg
+task_2398159,000003.jpg,3,2550375-3 5х.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550375-3 5х.JPG,talc,6,28,39690.5,18.89,masks\task_2398159__000003.png,overlays\task_2398159__000003.jpg
+task_2398159,000003.jpg,3,2550375-3 5х.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550375-3 5х.JPG,talc,7,13,5195.0,18.89,masks\task_2398159__000003.png,overlays\task_2398159__000003.jpg
+task_2398159,000003.jpg,3,2550375-3 5х.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550375-3 5х.JPG,talc,8,37,22137.0,18.89,masks\task_2398159__000003.png,overlays\task_2398159__000003.jpg
+task_2398159,000003.jpg,3,2550375-3 5х.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550375-3 5х.JPG,talc,9,51,47034.5,18.89,masks\task_2398159__000003.png,overlays\task_2398159__000003.jpg
+task_2398159,000003.jpg,3,2550375-3 5х.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550375-3 5х.JPG,talc,10,109,105185.5,18.89,masks\task_2398159__000003.png,overlays\task_2398159__000003.jpg
+task_2398159,000003.jpg,3,2550375-3 5х.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550375-3 5х.JPG,talc,11,48,68138.0,18.89,masks\task_2398159__000003.png,overlays\task_2398159__000003.jpg
+task_2398159,000004.jpg,4,2550376-1 5x.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550376-1 5x.JPG,talc,1,28,33890.5,33.59,masks\task_2398159__000004.png,overlays\task_2398159__000004.jpg
+task_2398159,000004.jpg,4,2550376-1 5x.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550376-1 5x.JPG,talc,2,54,338936.5,33.59,masks\task_2398159__000004.png,overlays\task_2398159__000004.jpg
+task_2398159,000004.jpg,4,2550376-1 5x.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550376-1 5x.JPG,talc,3,86,443604.0,33.59,masks\task_2398159__000004.png,overlays\task_2398159__000004.jpg
+task_2398159,000004.jpg,4,2550376-1 5x.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550376-1 5x.JPG,talc,4,24,85742.0,33.59,masks\task_2398159__000004.png,overlays\task_2398159__000004.jpg
+task_2398159,000004.jpg,4,2550376-1 5x.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550376-1 5x.JPG,talc,5,41,171928.5,33.59,masks\task_2398159__000004.png,overlays\task_2398159__000004.jpg
+task_2398159,000004.jpg,4,2550376-1 5x.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550376-1 5x.JPG,talc,6,45,222845.5,33.59,masks\task_2398159__000004.png,overlays\task_2398159__000004.jpg
+task_2398159,000005.jpg,5,2550376-2 10x.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550376-2 10x.JPG,talc,1,46,276516.0,12.84,masks\task_2398159__000005.png,overlays\task_2398159__000005.jpg
+task_2398159,000005.jpg,5,2550376-2 10x.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550376-2 10x.JPG,talc,2,51,62104.0,12.84,masks\task_2398159__000005.png,overlays\task_2398159__000005.jpg
+task_2398159,000005.jpg,5,2550376-2 10x.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550376-2 10x.JPG,talc,3,32,27441.0,12.84,masks\task_2398159__000005.png,overlays\task_2398159__000005.jpg
+task_2398159,000005.jpg,5,2550376-2 10x.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550376-2 10x.JPG,talc,4,25,16750.0,12.84,masks\task_2398159__000005.png,overlays\task_2398159__000005.jpg
+task_2398159,000005.jpg,5,2550376-2 10x.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550376-2 10x.JPG,talc,5,41,111955.5,12.84,masks\task_2398159__000005.png,overlays\task_2398159__000005.jpg
+task_2398159,000006.jpg,6,2550377-1 5x.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550377-1 5x.JPG,talc,1,131,501050.0,12.98,masks\task_2398159__000006.png,overlays\task_2398159__000006.jpg
+task_2398159,000007.jpg,7,2550378-1 5x.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550378-1 5x.JPG,talc,1,136,273115.0,45.8,masks\task_2398159__000007.png,overlays\task_2398159__000007.jpg
+task_2398159,000007.jpg,7,2550378-1 5x.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550378-1 5x.JPG,talc,2,44,88385.0,45.8,masks\task_2398159__000007.png,overlays\task_2398159__000007.jpg
+task_2398159,000007.jpg,7,2550378-1 5x.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550378-1 5x.JPG,talc,3,122,553057.5,45.8,masks\task_2398159__000007.png,overlays\task_2398159__000007.jpg
+task_2398159,000007.jpg,7,2550378-1 5x.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550378-1 5x.JPG,talc,4,88,107953.0,45.8,masks\task_2398159__000007.png,overlays\task_2398159__000007.jpg
+task_2398159,000007.jpg,7,2550378-1 5x.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550378-1 5x.JPG,talc,5,60,82641.0,45.8,masks\task_2398159__000007.png,overlays\task_2398159__000007.jpg
+task_2398159,000007.jpg,7,2550378-1 5x.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550378-1 5x.JPG,talc,6,163,345571.0,45.8,masks\task_2398159__000007.png,overlays\task_2398159__000007.jpg
+task_2398159,000007.jpg,7,2550378-1 5x.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550378-1 5x.JPG,talc,7,168,313340.0,45.8,masks\task_2398159__000007.png,overlays\task_2398159__000007.jpg
+task_2398159,000008.jpg,8,2550381-1 10x.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550381-1 10x.JPG,talc,1,51,86684.0,4.34,masks\task_2398159__000008.png,overlays\task_2398159__000008.jpg
+task_2398159,000008.jpg,8,2550381-1 10x.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550381-1 10x.JPG,talc,2,83,80005.5,4.34,masks\task_2398159__000008.png,overlays\task_2398159__000008.jpg
+task_2398159,000009.jpg,9,2550381-2 10x.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550381-2 10x.JPG,talc,1,254,319196.5,8.3,masks\task_2398159__000009.png,overlays\task_2398159__000009.jpg
+task_2398159,000010.jpg,10,2550382-1 10x.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550382-1 10x.JPG,talc,1,52,303967.5,43.74,masks\task_2398159__000010.png,overlays\task_2398159__000010.jpg
+task_2398159,000010.jpg,10,2550382-1 10x.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550382-1 10x.JPG,talc,2,61,330227.5,43.74,masks\task_2398159__000010.png,overlays\task_2398159__000010.jpg
+task_2398159,000010.jpg,10,2550382-1 10x.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/2550382-1 10x.JPG,talc,3,182,1055209.0,43.74,masks\task_2398159__000010.png,overlays\task_2398159__000010.jpg
+task_2398159,000011.jpg,11,DSCN3042.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3042.JPG,talc,1,167,1263189.0,58.51,masks\task_2398159__000011.png,overlays\task_2398159__000011.jpg
+task_2398159,000011.jpg,11,DSCN3042.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3042.JPG,talc,2,158,996960.5,58.51,masks\task_2398159__000011.png,overlays\task_2398159__000011.jpg
+task_2398159,000012.jpg,12,DSCN3048.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3048.JPG,talc,1,46,123789.5,25.68,masks\task_2398159__000012.png,overlays\task_2398159__000012.jpg
+task_2398159,000012.jpg,12,DSCN3048.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3048.JPG,talc,2,38,60908.0,25.68,masks\task_2398159__000012.png,overlays\task_2398159__000012.jpg
+task_2398159,000012.jpg,12,DSCN3048.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3048.JPG,talc,3,37,75649.5,25.68,masks\task_2398159__000012.png,overlays\task_2398159__000012.jpg
+task_2398159,000012.jpg,12,DSCN3048.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3048.JPG,talc,4,20,36662.5,25.68,masks\task_2398159__000012.png,overlays\task_2398159__000012.jpg
+task_2398159,000012.jpg,12,DSCN3048.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3048.JPG,talc,5,27,84322.0,25.68,masks\task_2398159__000012.png,overlays\task_2398159__000012.jpg
+task_2398159,000012.jpg,12,DSCN3048.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3048.JPG,talc,6,40,166143.5,25.68,masks\task_2398159__000012.png,overlays\task_2398159__000012.jpg
+task_2398159,000012.jpg,12,DSCN3048.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3048.JPG,talc,7,30,109133.5,25.68,masks\task_2398159__000012.png,overlays\task_2398159__000012.jpg
+task_2398159,000012.jpg,12,DSCN3048.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3048.JPG,talc,8,104,332139.5,25.68,masks\task_2398159__000012.png,overlays\task_2398159__000012.jpg
+task_2398159,000013.jpg,13,DSCN3051.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3051.JPG,talc,1,81,887486.5,38.32,masks\task_2398159__000013.png,overlays\task_2398159__000013.jpg
+task_2398159,000013.jpg,13,DSCN3051.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3051.JPG,talc,2,56,311236.0,38.32,masks\task_2398159__000013.png,overlays\task_2398159__000013.jpg
+task_2398159,000013.jpg,13,DSCN3051.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3051.JPG,talc,3,34,226826.0,38.32,masks\task_2398159__000013.png,overlays\task_2398159__000013.jpg
+task_2398159,000013.jpg,13,DSCN3051.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3051.JPG,talc,4,14,53358.5,38.32,masks\task_2398159__000013.png,overlays\task_2398159__000013.jpg
+task_2398159,000014.jpg,14,DSCN3052.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3052.JPG,talc,1,19,44191.0,26.38,masks\task_2398159__000014.png,overlays\task_2398159__000014.jpg
+task_2398159,000014.jpg,14,DSCN3052.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3052.JPG,talc,2,19,61286.0,26.38,masks\task_2398159__000014.png,overlays\task_2398159__000014.jpg
+task_2398159,000014.jpg,14,DSCN3052.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3052.JPG,talc,3,79,201074.0,26.38,masks\task_2398159__000014.png,overlays\task_2398159__000014.jpg
+task_2398159,000014.jpg,14,DSCN3052.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3052.JPG,talc,4,19,41147.0,26.38,masks\task_2398159__000014.png,overlays\task_2398159__000014.jpg
+task_2398159,000014.jpg,14,DSCN3052.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3052.JPG,talc,5,15,29833.0,26.38,masks\task_2398159__000014.png,overlays\task_2398159__000014.jpg
+task_2398159,000014.jpg,14,DSCN3052.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3052.JPG,talc,6,9,10841.0,26.38,masks\task_2398159__000014.png,overlays\task_2398159__000014.jpg
+task_2398159,000014.jpg,14,DSCN3052.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3052.JPG,talc,7,25,56608.5,26.38,masks\task_2398159__000014.png,overlays\task_2398159__000014.jpg
+task_2398159,000014.jpg,14,DSCN3052.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3052.JPG,talc,8,27,51905.0,26.38,masks\task_2398159__000014.png,overlays\task_2398159__000014.jpg
+task_2398159,000014.jpg,14,DSCN3052.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3052.JPG,talc,9,54,150088.5,26.38,masks\task_2398159__000014.png,overlays\task_2398159__000014.jpg
+task_2398159,000014.jpg,14,DSCN3052.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3052.JPG,talc,10,26,60386.5,26.38,masks\task_2398159__000014.png,overlays\task_2398159__000014.jpg
+task_2398159,000014.jpg,14,DSCN3052.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3052.JPG,talc,11,37,189996.0,26.38,masks\task_2398159__000014.png,overlays\task_2398159__000014.jpg
+task_2398159,000014.jpg,14,DSCN3052.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3052.JPG,talc,12,60,116328.5,26.38,masks\task_2398159__000014.png,overlays\task_2398159__000014.jpg
+task_2398159,000015.jpg,15,DSCN3053.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3053.JPG,talc,1,112,873730.0,29.69,masks\task_2398159__000015.png,overlays\task_2398159__000015.jpg
+task_2398159,000015.jpg,15,DSCN3053.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3053.JPG,talc,2,42,97200.5,29.69,masks\task_2398159__000015.png,overlays\task_2398159__000015.jpg
+task_2398159,000015.jpg,15,DSCN3053.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3053.JPG,talc,3,35,88079.5,29.69,masks\task_2398159__000015.png,overlays\task_2398159__000015.jpg
+task_2398159,000015.jpg,15,DSCN3053.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3053.JPG,talc,4,26,85498.0,29.69,masks\task_2398159__000015.png,overlays\task_2398159__000015.jpg
+task_2398159,000016.jpg,16,DSCN3056.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3056.JPG,talc,1,45,434254.5,34.83,masks\task_2398159__000016.png,overlays\task_2398159__000016.jpg
+task_2398159,000016.jpg,16,DSCN3056.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3056.JPG,talc,2,24,73329.0,34.83,masks\task_2398159__000016.png,overlays\task_2398159__000016.jpg
+task_2398159,000016.jpg,16,DSCN3056.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3056.JPG,talc,3,24,39847.0,34.83,masks\task_2398159__000016.png,overlays\task_2398159__000016.jpg
+task_2398159,000016.jpg,16,DSCN3056.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3056.JPG,talc,4,22,79942.0,34.83,masks\task_2398159__000016.png,overlays\task_2398159__000016.jpg
+task_2398159,000016.jpg,16,DSCN3056.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3056.JPG,talc,5,48,338241.0,34.83,masks\task_2398159__000016.png,overlays\task_2398159__000016.jpg
+task_2398159,000016.jpg,16,DSCN3056.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3056.JPG,talc,6,40,220922.5,34.83,masks\task_2398159__000016.png,overlays\task_2398159__000016.jpg
+task_2398159,000016.jpg,16,DSCN3056.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3056.JPG,talc,7,41,157045.0,34.83,masks\task_2398159__000016.png,overlays\task_2398159__000016.jpg
+task_2398159,000017.jpg,17,DSCN3057.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3057.JPG,talc,1,45,416090.0,38.06,masks\task_2398159__000017.png,overlays\task_2398159__000017.jpg
+task_2398159,000017.jpg,17,DSCN3057.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3057.JPG,talc,2,20,211371.0,38.06,masks\task_2398159__000017.png,overlays\task_2398159__000017.jpg
+task_2398159,000017.jpg,17,DSCN3057.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3057.JPG,talc,3,42,844211.5,38.06,masks\task_2398159__000017.png,overlays\task_2398159__000017.jpg
+task_2398159,000018.jpg,18,DSCN3066.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3066.JPG,talc,1,16,43945.0,34.45,masks\task_2398159__000018.png,overlays\task_2398159__000018.jpg
+task_2398159,000018.jpg,18,DSCN3066.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3066.JPG,talc,2,25,98832.0,34.45,masks\task_2398159__000018.png,overlays\task_2398159__000018.jpg
+task_2398159,000018.jpg,18,DSCN3066.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3066.JPG,talc,3,41,944817.5,34.45,masks\task_2398159__000018.png,overlays\task_2398159__000018.jpg
+task_2398159,000018.jpg,18,DSCN3066.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3066.JPG,talc,4,54,206405.5,34.45,masks\task_2398159__000018.png,overlays\task_2398159__000018.jpg
+task_2398159,000018.jpg,18,DSCN3066.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3066.JPG,talc,5,8,15050.5,34.45,masks\task_2398159__000018.png,overlays\task_2398159__000018.jpg
+task_2398159,000018.jpg,18,DSCN3066.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN3066.JPG,talc,6,11,21034.0,34.45,masks\task_2398159__000018.png,overlays\task_2398159__000018.jpg
+task_2398159,000019.jpg,19,DSCN4695.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4695.JPG,talc,1,9,19162.5,28.05,masks\task_2398159__000019.png,overlays\task_2398159__000019.jpg
+task_2398159,000019.jpg,19,DSCN4695.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4695.JPG,talc,2,24,99277.0,28.05,masks\task_2398159__000019.png,overlays\task_2398159__000019.jpg
+task_2398159,000019.jpg,19,DSCN4695.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4695.JPG,talc,3,27,98257.5,28.05,masks\task_2398159__000019.png,overlays\task_2398159__000019.jpg
+task_2398159,000019.jpg,19,DSCN4695.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4695.JPG,talc,4,33,124793.0,28.05,masks\task_2398159__000019.png,overlays\task_2398159__000019.jpg
+task_2398159,000019.jpg,19,DSCN4695.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4695.JPG,talc,5,16,55280.5,28.05,masks\task_2398159__000019.png,overlays\task_2398159__000019.jpg
+task_2398159,000019.jpg,19,DSCN4695.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4695.JPG,talc,6,108,659980.5,28.05,masks\task_2398159__000019.png,overlays\task_2398159__000019.jpg
+task_2398159,000019.jpg,19,DSCN4695.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4695.JPG,talc,7,9,23689.5,28.05,masks\task_2398159__000019.png,overlays\task_2398159__000019.jpg
+task_2398159,000020.jpg,20,DSCN4708.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4708.JPG,talc,1,40,642229.5,19.06,masks\task_2398159__000020.png,overlays\task_2398159__000020.jpg
+task_2398159,000020.jpg,20,DSCN4708.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4708.JPG,talc,2,19,47405.0,19.06,masks\task_2398159__000020.png,overlays\task_2398159__000020.jpg
+task_2398159,000020.jpg,20,DSCN4708.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4708.JPG,talc,3,14,45829.0,19.06,masks\task_2398159__000020.png,overlays\task_2398159__000020.jpg
+task_2398159,000021.jpg,21,DSCN4714.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4714.JPG,talc,1,24,202039.5,58.07,masks\task_2398159__000021.png,overlays\task_2398159__000021.jpg
+task_2398159,000021.jpg,21,DSCN4714.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4714.JPG,talc,2,63,1035945.5,58.07,masks\task_2398159__000021.png,overlays\task_2398159__000021.jpg
+task_2398159,000021.jpg,21,DSCN4714.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4714.JPG,talc,3,55,1006551.0,58.07,masks\task_2398159__000021.png,overlays\task_2398159__000021.jpg
+task_2398159,000022.jpg,22,DSCN4715.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4715.JPG,talc,1,35,353192.0,19.11,masks\task_2398159__000022.png,overlays\task_2398159__000022.jpg
+task_2398159,000022.jpg,22,DSCN4715.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4715.JPG,talc,2,30,235499.5,19.11,masks\task_2398159__000022.png,overlays\task_2398159__000022.jpg
+task_2398159,000022.jpg,22,DSCN4715.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4715.JPG,talc,3,27,148527.0,19.11,masks\task_2398159__000022.png,overlays\task_2398159__000022.jpg
+task_2398159,000023.jpg,23,DSCN4717.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4717.JPG,talc,1,63,1725728.0,69.35,masks\task_2398159__000023.png,overlays\task_2398159__000023.jpg
+task_2398159,000023.jpg,23,DSCN4717.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4717.JPG,talc,2,43,695068.0,69.35,masks\task_2398159__000023.png,overlays\task_2398159__000023.jpg
+task_2398159,000023.jpg,23,DSCN4717.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4717.JPG,talc,3,22,100060.5,69.35,masks\task_2398159__000023.png,overlays\task_2398159__000023.jpg
+task_2398159,000023.jpg,23,DSCN4717.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4717.JPG,talc,4,38,159690.0,69.35,masks\task_2398159__000023.png,overlays\task_2398159__000023.jpg
+task_2398159,000024.jpg,24,DSCN4718.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4718.JPG,talc,1,118,1397427.0,61.44,masks\task_2398159__000024.png,overlays\task_2398159__000024.jpg
+task_2398159,000024.jpg,24,DSCN4718.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4718.JPG,talc,2,49,534705.5,61.44,masks\task_2398159__000024.png,overlays\task_2398159__000024.jpg
+task_2398159,000024.jpg,24,DSCN4718.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4718.JPG,talc,3,12,26842.5,61.44,masks\task_2398159__000024.png,overlays\task_2398159__000024.jpg
+task_2398159,000024.jpg,24,DSCN4718.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4718.JPG,talc,4,33,413947.0,61.44,masks\task_2398159__000024.png,overlays\task_2398159__000024.jpg
+task_2398159,000025.jpg,25,DSCN4719.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4719.JPG,talc,1,12,30167.0,52.32,masks\task_2398159__000025.png,overlays\task_2398159__000025.jpg
+task_2398159,000025.jpg,25,DSCN4719.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4719.JPG,talc,2,41,189731.5,52.32,masks\task_2398159__000025.png,overlays\task_2398159__000025.jpg
+task_2398159,000025.jpg,25,DSCN4719.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4719.JPG,talc,3,45,460959.0,52.32,masks\task_2398159__000025.png,overlays\task_2398159__000025.jpg
+task_2398159,000025.jpg,25,DSCN4719.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4719.JPG,talc,4,30,77778.5,52.32,masks\task_2398159__000025.png,overlays\task_2398159__000025.jpg
+task_2398159,000025.jpg,25,DSCN4719.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4719.JPG,talc,5,41,421160.5,52.32,masks\task_2398159__000025.png,overlays\task_2398159__000025.jpg
+task_2398159,000025.jpg,25,DSCN4719.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4719.JPG,talc,6,30,150892.0,52.32,masks\task_2398159__000025.png,overlays\task_2398159__000025.jpg
+task_2398159,000025.jpg,25,DSCN4719.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4719.JPG,talc,7,32,192446.0,52.32,masks\task_2398159__000025.png,overlays\task_2398159__000025.jpg
+task_2398159,000025.jpg,25,DSCN4719.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4719.JPG,talc,8,28,96466.0,52.32,masks\task_2398159__000025.png,overlays\task_2398159__000025.jpg
+task_2398159,000025.jpg,25,DSCN4719.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4719.JPG,talc,9,59,306270.0,52.32,masks\task_2398159__000025.png,overlays\task_2398159__000025.jpg
+task_2398159,000025.jpg,25,DSCN4719.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4719.JPG,talc,10,27,59767.5,52.32,masks\task_2398159__000025.png,overlays\task_2398159__000025.jpg
+task_2398159,000025.jpg,25,DSCN4719.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4719.JPG,talc,11,23,31997.0,52.32,masks\task_2398159__000025.png,overlays\task_2398159__000025.jpg
+task_2398159,000026.jpg,26,DSCN4720.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4720.JPG,talc,1,25,52597.0,7.26,masks\task_2398159__000026.png,overlays\task_2398159__000026.jpg
+task_2398159,000026.jpg,26,DSCN4720.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4720.JPG,talc,2,18,56184.5,7.26,masks\task_2398159__000026.png,overlays\task_2398159__000026.jpg
+task_2398159,000026.jpg,26,DSCN4720.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4720.JPG,talc,3,11,23722.5,7.26,masks\task_2398159__000026.png,overlays\task_2398159__000026.jpg
+task_2398159,000026.jpg,26,DSCN4720.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4720.JPG,talc,4,18,41914.5,7.26,masks\task_2398159__000026.png,overlays\task_2398159__000026.jpg
+task_2398159,000026.jpg,26,DSCN4720.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4720.JPG,talc,5,20,89449.5,7.26,masks\task_2398159__000026.png,overlays\task_2398159__000026.jpg
+task_2398159,000026.jpg,26,DSCN4720.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4720.JPG,talc,6,9,14997.0,7.26,masks\task_2398159__000026.png,overlays\task_2398159__000026.jpg
+task_2398159,000027.jpg,27,DSCN4721.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4721.JPG,talc,1,21,43612.0,26.11,masks\task_2398159__000027.png,overlays\task_2398159__000027.jpg
+task_2398159,000027.jpg,27,DSCN4721.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4721.JPG,talc,2,7,8065.5,26.11,masks\task_2398159__000027.png,overlays\task_2398159__000027.jpg
+task_2398159,000027.jpg,27,DSCN4721.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4721.JPG,talc,3,27,109322.5,26.11,masks\task_2398159__000027.png,overlays\task_2398159__000027.jpg
+task_2398159,000027.jpg,27,DSCN4721.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4721.JPG,talc,4,27,80643.0,26.11,masks\task_2398159__000027.png,overlays\task_2398159__000027.jpg
+task_2398159,000027.jpg,27,DSCN4721.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4721.JPG,talc,5,55,316586.5,26.11,masks\task_2398159__000027.png,overlays\task_2398159__000027.jpg
+task_2398159,000027.jpg,27,DSCN4721.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4721.JPG,talc,6,76,227296.0,26.11,masks\task_2398159__000027.png,overlays\task_2398159__000027.jpg
+task_2398159,000027.jpg,27,DSCN4721.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4721.JPG,talc,7,43,220360.5,26.11,masks\task_2398159__000027.png,overlays\task_2398159__000027.jpg
+task_2398159,000028.jpg,28,DSCN4727.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4727.JPG,talc,1,39,395579.0,40.78,masks\task_2398159__000028.png,overlays\task_2398159__000028.jpg
+task_2398159,000028.jpg,28,DSCN4727.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4727.JPG,talc,2,16,40945.5,40.78,masks\task_2398159__000028.png,overlays\task_2398159__000028.jpg
+task_2398159,000028.jpg,28,DSCN4727.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4727.JPG,talc,3,16,42551.0,40.78,masks\task_2398159__000028.png,overlays\task_2398159__000028.jpg
+task_2398159,000028.jpg,28,DSCN4727.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4727.JPG,talc,4,34,90658.0,40.78,masks\task_2398159__000028.png,overlays\task_2398159__000028.jpg
+task_2398159,000028.jpg,28,DSCN4727.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4727.JPG,talc,5,15,57887.5,40.78,masks\task_2398159__000028.png,overlays\task_2398159__000028.jpg
+task_2398159,000028.jpg,28,DSCN4727.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4727.JPG,talc,6,18,64002.0,40.78,masks\task_2398159__000028.png,overlays\task_2398159__000028.jpg
+task_2398159,000028.jpg,28,DSCN4727.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4727.JPG,talc,7,26,154466.5,40.78,masks\task_2398159__000028.png,overlays\task_2398159__000028.jpg
+task_2398159,000028.jpg,28,DSCN4727.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4727.JPG,talc,8,83,727237.5,40.78,masks\task_2398159__000028.png,overlays\task_2398159__000028.jpg
+task_2398159,000029.jpg,29,DSCN4728.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4728.JPG,talc,1,57,531709.5,29.57,masks\task_2398159__000029.png,overlays\task_2398159__000029.jpg
+task_2398159,000029.jpg,29,DSCN4728.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4728.JPG,talc,2,34,306699.5,29.57,masks\task_2398159__000029.png,overlays\task_2398159__000029.jpg
+task_2398159,000029.jpg,29,DSCN4728.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4728.JPG,talc,3,42,302808.0,29.57,masks\task_2398159__000029.png,overlays\task_2398159__000029.jpg
+task_2398159,000030.jpg,30,DSCN4730.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4730.JPG,talc,1,45,194961.5,42.81,masks\task_2398159__000030.png,overlays\task_2398159__000030.jpg
+task_2398159,000030.jpg,30,DSCN4730.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4730.JPG,talc,2,48,419486.5,42.81,masks\task_2398159__000030.png,overlays\task_2398159__000030.jpg
+task_2398159,000030.jpg,30,DSCN4730.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4730.JPG,talc,3,23,147544.5,42.81,masks\task_2398159__000030.png,overlays\task_2398159__000030.jpg
+task_2398159,000030.jpg,30,DSCN4730.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4730.JPG,talc,4,17,62715.0,42.81,masks\task_2398159__000030.png,overlays\task_2398159__000030.jpg
+task_2398159,000030.jpg,30,DSCN4730.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4730.JPG,talc,5,29,73882.5,42.81,masks\task_2398159__000030.png,overlays\task_2398159__000030.jpg
+task_2398159,000030.jpg,30,DSCN4730.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4730.JPG,talc,6,14,40500.0,42.81,masks\task_2398159__000030.png,overlays\task_2398159__000030.jpg
+task_2398159,000030.jpg,30,DSCN4730.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4730.JPG,talc,7,80,713163.0,42.81,masks\task_2398159__000030.png,overlays\task_2398159__000030.jpg
+task_2398159,000031.jpg,31,DSCN4731.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4731.JPG,talc,1,30,95737.0,39.41,masks\task_2398159__000031.png,overlays\task_2398159__000031.jpg
+task_2398159,000031.jpg,31,DSCN4731.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4731.JPG,talc,2,110,1150128.0,39.41,masks\task_2398159__000031.png,overlays\task_2398159__000031.jpg
+task_2398159,000031.jpg,31,DSCN4731.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4731.JPG,talc,3,12,19358.5,39.41,masks\task_2398159__000031.png,overlays\task_2398159__000031.jpg
+task_2398159,000031.jpg,31,DSCN4731.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4731.JPG,talc,4,28,114761.0,39.41,masks\task_2398159__000031.png,overlays\task_2398159__000031.jpg
+task_2398159,000031.jpg,31,DSCN4731.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4731.JPG,talc,5,25,141274.5,39.41,masks\task_2398159__000031.png,overlays\task_2398159__000031.jpg
+task_2398159,000032.jpg,32,DSCN4732.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4732.JPG,talc,1,32,258302.5,28.54,masks\task_2398159__000032.png,overlays\task_2398159__000032.jpg
+task_2398159,000032.jpg,32,DSCN4732.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4732.JPG,talc,2,17,55343.5,28.54,masks\task_2398159__000032.png,overlays\task_2398159__000032.jpg
+task_2398159,000032.jpg,32,DSCN4732.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4732.JPG,talc,3,63,623685.0,28.54,masks\task_2398159__000032.png,overlays\task_2398159__000032.jpg
+task_2398159,000032.jpg,32,DSCN4732.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4732.JPG,talc,4,19,111248.0,28.54,masks\task_2398159__000032.png,overlays\task_2398159__000032.jpg
+task_2398159,000032.jpg,32,DSCN4732.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4732.JPG,talc,5,16,53504.5,28.54,masks\task_2398159__000032.png,overlays\task_2398159__000032.jpg
+task_2398159,000033.jpg,33,DSCN4733.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4733.JPG,talc,1,48,131658.0,15.33,masks\task_2398159__000033.png,overlays\task_2398159__000033.jpg
+task_2398159,000033.jpg,33,DSCN4733.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4733.JPG,talc,2,13,33880.5,15.33,masks\task_2398159__000033.png,overlays\task_2398159__000033.jpg
+task_2398159,000033.jpg,33,DSCN4733.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4733.JPG,talc,3,16,81915.5,15.33,masks\task_2398159__000033.png,overlays\task_2398159__000033.jpg
+task_2398159,000033.jpg,33,DSCN4733.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4733.JPG,talc,4,23,129292.5,15.33,masks\task_2398159__000033.png,overlays\task_2398159__000033.jpg
+task_2398159,000033.jpg,33,DSCN4733.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4733.JPG,talc,5,15,49709.0,15.33,masks\task_2398159__000033.png,overlays\task_2398159__000033.jpg
+task_2398159,000033.jpg,33,DSCN4733.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4733.JPG,talc,6,23,163716.0,15.33,masks\task_2398159__000033.png,overlays\task_2398159__000033.jpg
+task_2398159,000034.jpg,34,DSCN4734.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4734.JPG,talc,1,22,166729.0,40.21,masks\task_2398159__000034.png,overlays\task_2398159__000034.jpg
+task_2398159,000034.jpg,34,DSCN4734.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4734.JPG,talc,2,28,83391.5,40.21,masks\task_2398159__000034.png,overlays\task_2398159__000034.jpg
+task_2398159,000034.jpg,34,DSCN4734.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4734.JPG,talc,3,17,87312.0,40.21,masks\task_2398159__000034.png,overlays\task_2398159__000034.jpg
+task_2398159,000034.jpg,34,DSCN4734.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4734.JPG,talc,4,35,264210.5,40.21,masks\task_2398159__000034.png,overlays\task_2398159__000034.jpg
+task_2398159,000034.jpg,34,DSCN4734.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4734.JPG,talc,5,53,656458.5,40.21,masks\task_2398159__000034.png,overlays\task_2398159__000034.jpg
+task_2398159,000034.jpg,34,DSCN4734.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4734.JPG,talc,6,52,293648.0,40.21,masks\task_2398159__000034.png,overlays\task_2398159__000034.jpg
+task_2398159,000035.jpg,35,DSCN4735.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4735.JPG,talc,1,28,244289.0,29.34,masks\task_2398159__000035.png,overlays\task_2398159__000035.jpg
+task_2398159,000035.jpg,35,DSCN4735.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4735.JPG,talc,2,22,115195.0,29.34,masks\task_2398159__000035.png,overlays\task_2398159__000035.jpg
+task_2398159,000035.jpg,35,DSCN4735.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4735.JPG,talc,3,35,89566.0,29.34,masks\task_2398159__000035.png,overlays\task_2398159__000035.jpg
+task_2398159,000035.jpg,35,DSCN4735.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4735.JPG,talc,4,27,121594.0,29.34,masks\task_2398159__000035.png,overlays\task_2398159__000035.jpg
+task_2398159,000035.jpg,35,DSCN4735.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4735.JPG,talc,5,24,81399.0,29.34,masks\task_2398159__000035.png,overlays\task_2398159__000035.jpg
+task_2398159,000035.jpg,35,DSCN4735.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4735.JPG,talc,6,11,32689.0,29.34,masks\task_2398159__000035.png,overlays\task_2398159__000035.jpg
+task_2398159,000035.jpg,35,DSCN4735.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4735.JPG,talc,7,15,98831.0,29.34,masks\task_2398159__000035.png,overlays\task_2398159__000035.jpg
+task_2398159,000035.jpg,35,DSCN4735.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4735.JPG,talc,8,66,346427.5,29.34,masks\task_2398159__000035.png,overlays\task_2398159__000035.jpg
+task_2398159,000036.jpg,36,DSCN4754.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4754.JPG,talc,1,107,1305806.5,58.57,masks\task_2398159__000036.png,overlays\task_2398159__000036.jpg
+task_2398159,000036.jpg,36,DSCN4754.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4754.JPG,talc,2,71,957114.5,58.57,masks\task_2398159__000036.png,overlays\task_2398159__000036.jpg
+task_2398159,000037.jpg,37,DSCN4755.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4755.JPG,talc,1,98,672236.5,34.98,masks\task_2398159__000037.png,overlays\task_2398159__000037.jpg
+task_2398159,000037.jpg,37,DSCN4755.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN4755.JPG,talc,2,40,677708.0,34.98,masks\task_2398159__000037.png,overlays\task_2398159__000037.jpg
+task_2398159,000038.jpg,38,DSCN5032.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN5032.JPG,talc,1,37,277060.5,15.4,masks\task_2398159__000038.png,overlays\task_2398159__000038.jpg
+task_2398159,000038.jpg,38,DSCN5032.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN5032.JPG,talc,2,25,101012.5,15.4,masks\task_2398159__000038.png,overlays\task_2398159__000038.jpg
+task_2398159,000038.jpg,38,DSCN5032.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN5032.JPG,talc,3,13,50351.0,15.4,masks\task_2398159__000038.png,overlays\task_2398159__000038.jpg
+task_2398159,000038.jpg,38,DSCN5032.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN5032.JPG,talc,4,41,165337.5,15.4,masks\task_2398159__000038.png,overlays\task_2398159__000038.jpg
+task_2398159,000039.jpg,39,DSCN5180.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN5180.JPG,talc,1,111,1154263.5,29.89,masks\task_2398159__000039.png,overlays\task_2398159__000039.jpg
+task_2398159,000040.jpg,40,DSCN5183.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN5183.JPG,talc,1,15,37644.5,31.84,masks\task_2398159__000040.png,overlays\task_2398159__000040.jpg
+task_2398159,000040.jpg,40,DSCN5183.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN5183.JPG,talc,2,29,143161.5,31.84,masks\task_2398159__000040.png,overlays\task_2398159__000040.jpg
+task_2398159,000040.jpg,40,DSCN5183.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN5183.JPG,talc,3,49,153209.5,31.84,masks\task_2398159__000040.png,overlays\task_2398159__000040.jpg
+task_2398159,000040.jpg,40,DSCN5183.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN5183.JPG,talc,4,21,74100.5,31.84,masks\task_2398159__000040.png,overlays\task_2398159__000040.jpg
+task_2398159,000040.jpg,40,DSCN5183.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN5183.JPG,talc,5,19,53522.5,31.84,masks\task_2398159__000040.png,overlays\task_2398159__000040.jpg
+task_2398159,000040.jpg,40,DSCN5183.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN5183.JPG,talc,6,61,767112.5,31.84,masks\task_2398159__000040.png,overlays\task_2398159__000040.jpg
+task_2398159,000041.jpg,41,DSCN5185.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN5185.JPG,talc,1,26,89427.0,17.72,masks\task_2398159__000041.png,overlays\task_2398159__000041.jpg
+task_2398159,000041.jpg,41,DSCN5185.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN5185.JPG,talc,2,61,324427.0,17.72,masks\task_2398159__000041.png,overlays\task_2398159__000041.jpg
+task_2398159,000041.jpg,41,DSCN5185.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN5185.JPG,talc,3,49,268911.0,17.72,masks\task_2398159__000041.png,overlays\task_2398159__000041.jpg
+task_2398159,000042.jpg,42,DSCN5186.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN5186.JPG,talc,1,20,61697.5,16.18,masks\task_2398159__000042.png,overlays\task_2398159__000042.jpg
+task_2398159,000042.jpg,42,DSCN5186.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN5186.JPG,talc,2,63,493704.0,16.18,masks\task_2398159__000042.png,overlays\task_2398159__000042.jpg
+task_2398159,000042.jpg,42,DSCN5186.JPG,ch1_detail,Фото руд по сортам. ч1/Оталькованные руды/DSCN5186.JPG,talc,3,18,68629.0,16.18,masks\task_2398159__000042.png,overlays\task_2398159__000042.jpg
+task_2398159,000043.jpg,43,2539589-1.JPG,ch1_detail,Фото руд по сортам. ч1/Рядовые руды/2539589-1.JPG,talc,1,15,73022.0,1.9,masks\task_2398159__000043.png,overlays\task_2398159__000043.jpg
+task_2398159,000045.jpg,45,2539590-1.JPG,ch1_detail,Фото руд по сортам. ч1/Рядовые руды/2539590-1.JPG,talc,1,57,672503.0,18.85,masks\task_2398159__000045.png,overlays\task_2398159__000045.jpg
+task_2398159,000045.jpg,45,2539590-1.JPG,ch1_detail,Фото руд по сортам. ч1/Рядовые руды/2539590-1.JPG,talc,2,18,54408.0,18.85,masks\task_2398159__000045.png,overlays\task_2398159__000045.jpg
+task_2398159,000046.jpg,46,2544791-1 10x аншлиф.JPG,ch1_detail,Фото руд по сортам. ч1/Рядовые руды/2544791-1 10x аншлиф.JPG,talc,1,43,1057019.0,41.43,masks\task_2398159__000046.png,overlays\task_2398159__000046.jpg
+task_2398159,000046.jpg,46,2544791-1 10x аншлиф.JPG,ch1_detail,Фото руд по сортам. ч1/Рядовые руды/2544791-1 10x аншлиф.JPG,talc,2,30,545465.0,41.43,masks\task_2398159__000046.png,overlays\task_2398159__000046.jpg
+task_2398159,000047.jpg,47,2544791-2 10x аншлиф.JPG,ch1_detail,Фото руд по сортам. ч1/Рядовые руды/2544791-2 10x аншлиф.JPG,talc,1,21,178532.5,4.62,masks\task_2398159__000047.png,overlays\task_2398159__000047.jpg
+task_2398159,000051.jpg,51,2548036 5x 2.JPG,ch1_detail,Фото руд по сортам. ч1/Рядовые руды/2548036 5x 2.JPG,talc,1,31,174669.0,21.86,masks\task_2398159__000051.png,overlays\task_2398159__000051.jpg
+task_2398159,000051.jpg,51,2548036 5x 2.JPG,ch1_detail,Фото руд по сортам. ч1/Рядовые руды/2548036 5x 2.JPG,talc,2,23,81931.5,21.86,masks\task_2398159__000051.png,overlays\task_2398159__000051.jpg
+task_2398159,000051.jpg,51,2548036 5x 2.JPG,ch1_detail,Фото руд по сортам. ч1/Рядовые руды/2548036 5x 2.JPG,talc,3,47,587560.5,21.86,masks\task_2398159__000051.png,overlays\task_2398159__000051.jpg
+task_2398159,000052.jpg,52,2548037 10x 2.JPG,ch1_detail,Фото руд по сортам. ч1/Рядовые руды/2548037 10x 2.JPG,talc,1,21,142675.5,3.69,masks\task_2398159__000052.png,overlays\task_2398159__000052.jpg
+task_2398159,000055.jpg,55,2550501-1 20x.JPG,ch1_detail,Фото руд по сортам. ч1/Рядовые руды/2550501-1 20x.JPG,talc,1,18,146601.5,4.15,masks\task_2398159__000055.png,overlays\task_2398159__000055.jpg
+task_2398159,000055.jpg,55,2550501-1 20x.JPG,ch1_detail,Фото руд по сортам. ч1/Рядовые руды/2550501-1 20x.JPG,talc,2,8,13751.0,4.15,masks\task_2398159__000055.png,overlays\task_2398159__000055.jpg
+task_2398159,000062.jpg,62,2652982 5x 16.JPG,ch1_detail,Фото руд по сортам. ч1/Рядовые руды/2652982 5x 16.JPG,talc,1,83,825665.5,21.39,masks\task_2398159__000062.png,overlays\task_2398159__000062.jpg
+task_2398159,000067.jpg,67,DSCN2012.JPG,ch1_detail,Фото руд по сортам. ч1/Рядовые руды/DSCN2012.JPG,talc,1,41,226809.0,12.76,masks\task_2398159__000067.png,overlays\task_2398159__000067.jpg
+task_2398159,000067.jpg,67,DSCN2012.JPG,ch1_detail,Фото руд по сортам. ч1/Рядовые руды/DSCN2012.JPG,talc,2,24,89459.5,12.76,masks\task_2398159__000067.png,overlays\task_2398159__000067.jpg
+task_2398159,000067.jpg,67,DSCN2012.JPG,ch1_detail,Фото руд по сортам. ч1/Рядовые руды/DSCN2012.JPG,talc,3,29,176270.5,12.76,masks\task_2398159__000067.png,overlays\task_2398159__000067.jpg

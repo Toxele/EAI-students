@@ -34,3 +34,6 @@ BRIGHT_PERCENTILE = 88
 
 # Минимальная площадь blob в пикселях (отсечь шум)
 MIN_BLOB_AREA = 30
+
+# Unet++ fast_768 — сегментация талька (Kaggle)
+TALC_SEGMENTER_WEIGHTS = PROJECT_ROOT / "models" / "weights" / "best_talk.pt"
