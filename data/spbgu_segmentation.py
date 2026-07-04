@@ -100,15 +100,21 @@ def read_spbgu_image(path: str | Path, input_kind: str = "txt") -> Image.Image:
     return image
 
 
-def read_spbgu_binary_mask(path: str | Path) -> Image.Image:
-    """Read a color instance BMP as a binary foreground mask."""
+def read_spbgu_binary_mask(path: str | Path, mask_mode: str = "foreground") -> Image.Image:
+    """Read a color instance BMP as a binary semantic mask."""
     image = cv2.imdecode(np.fromfile(str(path), dtype=np.uint8), cv2.IMREAD_UNCHANGED)
     if image is None:
         raise ValueError(f"Could not read mask: {path}")
     if image.ndim == 3:
-        mask = np.any(image[:, :, :3] > 0, axis=2)
+        foreground = np.any(image[:, :, :3] > 0, axis=2)
     else:
-        mask = image > 0
+        foreground = image > 0
+    if mask_mode == "foreground":
+        mask = foreground
+    elif mask_mode in {"contour", "contours", "background"}:
+        mask = ~foreground
+    else:
+        raise ValueError(f"Unsupported SPbGU mask_mode: {mask_mode}")
     return Image.fromarray(mask.astype(np.uint8) * 255, mode="L")
 
 
@@ -207,25 +213,45 @@ class SpbguSegmentationDataset(Dataset):
         augment: bool = False,
         augmentation_cfg: dict[str, Any] | None = None,
         in_channels: int = 3,
+        patch_size: int | None = None,
+        patch_stride: int | None = None,
+        min_patch_foreground: float = 0.0,
+        max_patch_foreground: float = 1.0,
+        mask_mode: str = "foreground",
     ) -> None:
         """Create a dataset from manifest rows or a CSV path."""
         if torch is None:
             raise ImportError("SpbguSegmentationDataset requires torch and torchvision.")
         self.rows = _load_rows(rows)
+        self.samples = self._build_samples(
+            self.rows,
+            patch_size=patch_size,
+            patch_stride=patch_stride,
+            min_patch_foreground=min_patch_foreground,
+            max_patch_foreground=max_patch_foreground,
+            mask_mode=mask_mode,
+        )
         self.image_size = image_size
         self.augment = augment
         self.augmentation_cfg = augmentation_cfg or {}
         self.in_channels = in_channels
+        self.mask_mode = mask_mode
 
     def __len__(self) -> int:
         """Return the number of available samples."""
-        return len(self.rows)
+        return len(self.samples)
 
     def __getitem__(self, idx: int) -> dict[str, Any]:
         """Return normalized image tensor, binary mask tensor and paths."""
-        row = self.rows[idx]
+        row = self.samples[idx]
         image = read_spbgu_image(row["source_path"], row.get("input_kind", "txt"))
-        mask = read_spbgu_binary_mask(row["mask_path"])
+        mask = read_spbgu_binary_mask(row["mask_path"], self.mask_mode)
+        if "patch_x" in row:
+            x = int(row["patch_x"])
+            y = int(row["patch_y"])
+            size = int(row["patch_size"])
+            image = image.crop((x, y, x + size, y + size))
+            mask = mask.crop((x, y, x + size, y + size))
         if self.augment:
             image, mask = self._augment_pair(image, mask)
         image = TF.resize(image, [self.image_size, self.image_size])
@@ -244,7 +270,45 @@ class SpbguSegmentationDataset(Dataset):
             "mask_path": row["mask_path"],
             "sample_id": row.get("sample_id", Path(row["source_path"]).stem),
             "domain_label": row.get("domain_label", "unknown"),
+            "patch_x": row.get("patch_x", ""),
+            "patch_y": row.get("patch_y", ""),
         }
+
+    @staticmethod
+    def _build_samples(
+        rows: list[dict[str, str]],
+        patch_size: int | None,
+        patch_stride: int | None,
+        min_patch_foreground: float,
+        max_patch_foreground: float,
+        mask_mode: str,
+    ) -> list[dict[str, str]]:
+        """Expand image rows into deterministic patch rows when patching is enabled."""
+        if not patch_size:
+            return rows
+        stride = patch_stride or patch_size
+        samples: list[dict[str, str]] = []
+        for row in rows:
+            mask = read_spbgu_binary_mask(row["mask_path"], mask_mode)
+            width, height = mask.size
+            x_positions = _grid_positions(width, patch_size, stride)
+            y_positions = _grid_positions(height, patch_size, stride)
+            mask_array = np.asarray(mask) > 0
+            for y in y_positions:
+                for x in x_positions:
+                    patch = mask_array[y : y + patch_size, x : x + patch_size]
+                    foreground = float(patch.mean())
+                    if foreground < min_patch_foreground or foreground > max_patch_foreground:
+                        continue
+                    sample = dict(row)
+                    sample["patch_x"] = str(x)
+                    sample["patch_y"] = str(y)
+                    sample["patch_size"] = str(patch_size)
+                    sample["patch_foreground"] = f"{foreground:.6f}"
+                    samples.append(sample)
+        if not samples:
+            raise ValueError("Patch filtering removed every SPbGU sample. Relax foreground thresholds.")
+        return samples
 
     def _augment_pair(self, image: Image.Image, mask: Image.Image) -> tuple[Image.Image, Image.Image]:
         """Apply paired geometry transforms and image-only acquisition noise."""
@@ -337,3 +401,14 @@ def _apply_blur(image: Image.Image, cfg: dict[str, Any]) -> Image.Image:
     if ksize % 2 == 0:
         ksize += 1
     return Image.fromarray(cv2.GaussianBlur(rgb, (ksize, ksize), 0), mode="RGB")
+
+
+def _grid_positions(length: int, patch_size: int, stride: int) -> list[int]:
+    """Return patch start coordinates that cover the whole axis."""
+    if length <= patch_size:
+        return [0]
+    positions = list(range(0, length - patch_size + 1, stride))
+    last = length - patch_size
+    if positions[-1] != last:
+        positions.append(last)
+    return positions

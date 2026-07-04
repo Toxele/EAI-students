@@ -32,6 +32,7 @@ class SpbguMaskPredictor:
         self.cfg = checkpoint["config"]
         self.image_size = int(self.cfg["data"]["image_size"])
         self.in_channels = int(self.cfg["model"].get("in_channels", 3))
+        self.mask_mode = self.cfg["data"].get("mask_mode", "foreground")
         self.model = SegmentationFactory.create(self.cfg["model"]).to(self.device)
         self.model.load_state_dict(checkpoint["model_state_dict"])
         self.model.eval()
@@ -74,7 +75,7 @@ class SpbguMaskPredictor:
             Image.fromarray(pred_mask, mode="L").save(mask_path)
             _save_overlay(image, pred_mask, overlay_path, color=(255, 0, 0))
             if row.get("mask_path"):
-                gt_mask = np.asarray(read_spbgu_binary_mask(row["mask_path"]))
+                gt_mask = np.asarray(read_spbgu_binary_mask(row["mask_path"], self.mask_mode))
                 _save_gt_pred_comparison(image, gt_mask, pred_mask, comparison_path)
             report_rows.append(
                 {

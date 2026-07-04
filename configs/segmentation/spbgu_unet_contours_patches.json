@@ -1,0 +1,77 @@
+{
+  "manifest": {
+    "root": "spbgu_data",
+    "output_csv": "artifacts/manifests/spbgu_segmentation_manifest.csv",
+    "input_kind": "txt",
+    "val_fraction": 0.25,
+    "seed": 42
+  },
+  "training": {
+    "seed": 42,
+    "device": "auto",
+    "dataset_csv": "artifacts/manifests/spbgu_segmentation_manifest.csv",
+    "run_dir": "notebooks/spbgu_unet_experiments/outputs/runs/spbgu_unet_resnet34_txt_contours_patches",
+    "data": {
+      "image_size": 256,
+      "patch_size": 256,
+      "patch_stride": 128,
+      "mask_mode": "contours",
+      "min_patch_foreground": 0.02,
+      "max_patch_foreground": 0.98,
+      "batch_size": 8,
+      "num_workers": 0,
+      "augment": true
+    },
+    "augmentation": {
+      "hflip_p": 0.5,
+      "vflip_p": 0.5,
+      "max_rotate_degrees": 0,
+      "brightness": 0.12,
+      "contrast": 0.20,
+      "clahe_p": 0.25,
+      "noise_p": 0.20,
+      "noise_sigma_min": 0.5,
+      "noise_sigma_max": 5.0,
+      "blur_p": 0.05,
+      "blur_kernel_sizes": [3]
+    },
+    "model": {
+      "name": "smp_unet",
+      "encoder_name": "resnet34",
+      "encoder_weights": "imagenet",
+      "in_channels": 3,
+      "classes": 1
+    },
+    "loss": {
+      "bce_weight": 0.45,
+      "dice_weight": 0.45,
+      "focal_weight": 0.10,
+      "focal_alpha": 0.55,
+      "focal_gamma": 2.0
+    },
+    "optimizer": {
+      "lr": 0.00025,
+      "weight_decay": 0.0001
+    },
+    "trainer": {
+      "epochs": 50,
+      "amp": true,
+      "save_every": 1,
+      "early_stopping_patience": 10,
+      "threshold": 0.5,
+      "monitor": "iou",
+      "roc_auc": true
+    },
+    "cross_validation": {
+      "folds": 4,
+      "run_dir": "notebooks/spbgu_unet_experiments/outputs/runs/spbgu_unet_resnet34_txt_contours_patches_4fold"
+    }
+  },
+  "prediction": {
+    "checkpoint_path": "notebooks/spbgu_unet_experiments/outputs/runs/spbgu_unet_resnet34_txt_contours_patches/best.pt",
+    "manifest_csv": "artifacts/manifests/spbgu_segmentation_manifest.csv",
+    "output_dir": "notebooks/spbgu_unet_experiments/outputs/predictions/spbgu_unet_resnet34_txt_contours_patches",
+    "device": "auto",
+    "threshold": 0.5
+  }
+}

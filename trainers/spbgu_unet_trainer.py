@@ -110,6 +110,11 @@ class SpbguUNetTrainer:
             augment=augment,
             augmentation_cfg=self.cfg.get("augmentation", {}),
             in_channels=self.cfg["model"].get("in_channels", 3),
+            patch_size=self.cfg["data"].get("patch_size"),
+            patch_stride=self.cfg["data"].get("patch_stride"),
+            min_patch_foreground=self.cfg["data"].get("min_patch_foreground", 0.0),
+            max_patch_foreground=self.cfg["data"].get("max_patch_foreground", 1.0),
+            mask_mode=self.cfg["data"].get("mask_mode", "foreground"),
         )
 
     def _run_epoch(self, epoch: int, train: bool) -> dict[str, float]:
