@@ -1,0 +1,80 @@
+{
+  "seed": 42,
+  "device": "auto",
+  "manifest_csv": "manifest.csv",
+  "run_dir": "runs/best",
+  "run_name": "kaggle_fast",
+  "tags": ["coarse", "fine"],
+  "threshold": 0.5,
+  "use_pos_weight": true,
+  "selection_metric": "ig_macro_f1",
+  "mlflow": {"enabled": false},
+  "data": {
+    "image_size": 384,
+    "batch_size": 32,
+    "num_workers": 2,
+    "use_weighted_sampler": true,
+    "sampler_mode": "ig_label"
+  },
+  "augmentation": {
+    "resize_mode": "random_resized_crop",
+    "crop_scale": [0.72, 1.0],
+    "crop_ratio": [0.85, 1.18],
+    "hflip_p": 0.5,
+    "vflip_p": 0.25,
+    "brightness": 0.22,
+    "contrast": 0.26,
+    "saturation": 0.22,
+    "hue": 0.025,
+    "gamma": 0.15,
+    "gray_domain_p": 0.45,
+    "gray_saturation_min": 0.04,
+    "gray_saturation_max": 0.42,
+    "gray_brightness_min": 0.40,
+    "gray_brightness_max": 0.98,
+    "gray_contrast_min": 0.55,
+    "gray_contrast_max": 1.18,
+    "gray_blue_gain_max": 1.18,
+    "gray_red_gain_min": 0.82,
+    "domain_strong_p": 0.30,
+    "domain_chroma_min": 0.04,
+    "domain_chroma_max": 0.78,
+    "clahe_p": 0.55,
+    "clahe_clip_min": 1.2,
+    "clahe_clip_max": 3.0,
+    "clahe_grid_sizes": [6, 8, 10, 12],
+    "red_gain_min": 0.82,
+    "red_gain_max": 1.12,
+    "green_gain_min": 0.88,
+    "green_gain_max": 1.12,
+    "blue_gain_min": 0.88,
+    "blue_gain_max": 1.20,
+    "blur_p": 0.12,
+    "blur_kernel_sizes": [3, 5],
+    "noise_p": 0.22,
+    "noise_sigma_min": 1.0,
+    "noise_sigma_max": 7.0,
+    "jpeg_p": 0.16,
+    "jpeg_quality_min": 58,
+    "jpeg_quality_max": 94
+  },
+  "model": {
+    "name": "resnet18",
+    "pretrained": true,
+    "fallback": "small_cnn"
+  },
+  "optimizer": {
+    "name": "adamw",
+    "lr": 0.0003,
+    "weight_decay": 0.0001
+  },
+  "scheduler": {
+    "name": "cosine",
+    "eta_min": 1e-6
+  },
+  "trainer": {
+    "epochs": 12,
+    "amp": true,
+    "early_stopping_patience": 4
+  }
+}

@@ -1,7 +1,8 @@
-# Веса сегментации талька
+# Веса моделей
 
 ```
-best_talk.pt   # Unet++ fast_768, val Dice ~0.68
+best_talk.pt                 # Unet++ talc segmentation (kaggle/train_talc_segmentation.ipynb)
+best_coarse_fine_binary.pt   # binary coarse/fine ResNet34 (scripts/train_coarse_fine.py, F1≈0.95)
 ```
 
-Обучение: `kaggle/train_talc_segmentation.ipynb`
+Kaggle notebooks (multilabel grid): `kaggle/train_coarse_fine_multilabel.ipynb`, `kaggle/train_coarse_fine_binary.ipynb`
