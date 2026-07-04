@@ -1,0 +1,87 @@
+{
+  "seed": 42,
+  "device": "auto",
+  "dataset_csv": "artifacts/manifests/talc_segmentation_dataset.csv",
+  "run_dir": "notebooks/talc_domain_generalization/outputs/runs/talc_segmenter_domain_aug",
+  "mlflow": {
+    "enabled": false,
+    "tracking_uri": "sqlite:///artifacts/mlflow.db",
+    "experiment": "nornikel_talc_segmentation",
+    "run_name": "tiny_unet_domain_aug"
+  },
+  "data": {
+    "image_size": 384,
+    "batch_size": 4,
+    "num_workers": 0,
+    "augment": true
+  },
+  "augmentation": {
+    "hflip_p": 0.5,
+    "vflip_p": 0.3,
+    "max_rotate_degrees": 18,
+    "brightness": 0.22,
+    "contrast": 0.26,
+    "saturation": 0.20,
+    "gamma": 0.16,
+    "gray_domain_p": 0.55,
+    "gray_saturation_min": 0.04,
+    "gray_saturation_max": 0.38,
+    "gray_brightness_min": 0.38,
+    "gray_brightness_max": 0.95,
+    "gray_contrast_min": 0.48,
+    "gray_contrast_max": 1.18,
+    "gray_blue_gain_max": 1.18,
+    "gray_red_gain_min": 0.82,
+    "domain_strong_p": 0.45,
+    "domain_chroma_min": 0.03,
+    "domain_chroma_max": 0.70,
+    "clahe_p": 0.65,
+    "clahe_clip_min": 1.2,
+    "clahe_clip_max": 3.2,
+    "clahe_grid_sizes": [6, 8, 10, 12],
+    "vignette_p": 0.45,
+    "vignette_strength_min": 0.08,
+    "vignette_strength_max": 0.32,
+    "red_gain_min": 0.80,
+    "red_gain_max": 1.12,
+    "green_gain_min": 0.86,
+    "green_gain_max": 1.13,
+    "blue_gain_min": 0.88,
+    "blue_gain_max": 1.22,
+    "blur_p": 0.18,
+    "blur_kernel_sizes": [3, 5],
+    "median_kernel_sizes": [3],
+    "noise_p": 0.30,
+    "noise_sigma_min": 1.5,
+    "noise_sigma_max": 9.0,
+    "speckle_p": 0.25,
+    "jpeg_p": 0.20,
+    "jpeg_quality_min": 58,
+    "jpeg_quality_max": 92
+  },
+  "model": {
+    "name": "tiny_unet",
+    "in_channels": 3,
+    "base_channels": 32
+  },
+  "loss": {
+    "bce_weight": 0.35,
+    "dice_weight": 0.50,
+    "focal_weight": 0.15,
+    "focal_alpha": 0.80,
+    "focal_gamma": 2.0
+  },
+  "optimizer": {
+    "name": "adamw",
+    "lr": 0.00025,
+    "weight_decay": 0.0001
+  },
+  "trainer": {
+    "epochs": 34,
+    "amp": true,
+    "save_every": 1,
+    "early_stopping_patience": 8,
+    "threshold": 0.5,
+    "roc_auc": true
+  }
+}

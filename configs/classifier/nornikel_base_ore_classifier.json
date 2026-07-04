@@ -1,0 +1,44 @@
+{
+  "seed": 42,
+  "device": "auto",
+  "manifest_csv": "artifacts/manifests/nornikel_manifest.csv",
+  "run_dir": "artifacts/runs/base_ore_classifier",
+  "mlflow": {
+    "enabled": true,
+    "tracking_uri": "sqlite:///artifacts/mlflow.db",
+    "experiment": "nornikel_business_rule",
+    "run_name": "base_ordinary_vs_thin"
+  },
+  "include_sources": ["classification"],
+  "exclude_conflicts": true,
+  "exclude_duplicate_leaks": true,
+  "classes": ["ordinary", "thin"],
+  "split": {
+    "val_fraction": 0.2,
+    "group_column": "content_hash",
+    "label_column": "label",
+    "subset_column": "subset"
+  },
+  "data": {
+    "image_size": 384,
+    "batch_size": 8,
+    "num_workers": 0,
+    "use_weighted_sampler": true
+  },
+  "model": {
+    "name": "resnet18",
+    "pretrained": true,
+    "fallback": "small_cnn"
+  },
+  "optimizer": {
+    "name": "adamw",
+    "lr": 0.0003,
+    "weight_decay": 0.0001
+  },
+  "trainer": {
+    "epochs": 8,
+    "amp": true,
+    "save_every": 1,
+    "early_stopping_patience": 4
+  }
+}
