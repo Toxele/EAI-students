@@ -1,6 +1,9 @@
 # ML pipeline
 kaggle_notebooks/
 artifacts/
+dataset/
+spbgu_data/
+notebooks/**/outputs/
 __pycache__/
 *.pyc
 .venv/
