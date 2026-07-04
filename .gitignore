@@ -36,3 +36,6 @@ web/dist/
 # Local backup files from merge
 *.local.bak
 *.app.bak
+
+# Models
+*.pt

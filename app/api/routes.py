@@ -20,6 +20,7 @@ from app.api.schemas import (
 from app.config import RESULTS_DIR, UPLOAD_DIR
 from app.pipeline.analyzer import Analyzer
 from app.pipeline.loader import load_image_from_bytes
+from app.pipeline.mode_detector import detect_mode
 from app.pipeline.overlay import draw_talc_layer, draw_type_layer, save_overlay
 from app.pipeline.pdf_report import build_pdf_bytes
 from app.pipeline.report import ReportMetrics, metrics_to_csv
@@ -103,11 +104,19 @@ def analyze_upload(file_bytes: bytes, filename: str, mode_hint: str | None = Non
 
     original_height, original_width = bgr.shape[:2]
     result_id = str(uuid.uuid4())[:8]
+    mode = mode_hint if mode_hint in ("panorama", "detail") else detect_mode(original_width, original_height)
 
     upload_path = UPLOAD_DIR / f"{result_id}_{_safe_filename(filename)}"
     upload_path.write_bytes(file_bytes)
 
-    image_rgb = load_image_from_bytes(file_bytes)
+    # Панораму анализируем в исходном разрешении — Analyzer режет её на тайлы
+    # сам (см. _analyze_panorama). Глобальный downscale здесь схлопнул бы
+    # тальк/зёрна до суб-пикселя ещё до тайлинга. Detail-снимки уже
+    # компактные — downscale безопасен и экономит память.
+    if mode == "panorama":
+        image_rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
+    else:
+        image_rgb = load_image_from_bytes(file_bytes)
     ph, pw = image_rgb.shape[:2]
     scale_x = original_width / pw
     scale_y = original_height / ph
@@ -117,7 +126,7 @@ def analyze_upload(file_bytes: bytes, filename: str, mode_hint: str | None = Non
     # original (up to 10000x10000) on every grain edit.
     _save_view_jpg(image_rgb, RESULTS_DIR / f"{result_id}_overview_view.jpg")
 
-    report = analyzer.analyze(image_rgb, original_width, original_height, mode_hint=mode_hint)
+    report = analyzer.analyze(image_rgb, original_width, original_height, mode_hint=mode)
 
     grains_orig = scale_grains_to_original(report.grains, scale_x, scale_y)
 
@@ -232,6 +241,67 @@ def _refresh_type_view(state: dict[str, Any]) -> None:
     ]
     type_layer = draw_type_layer(overview_rgb, view_grains)
     save_overlay(type_layer, str(RESULTS_DIR / f"{result_id}_type_view.jpg"))
+
+
+def _refresh_talc_view(state: dict[str, Any], mask_orig: np.ndarray) -> None:
+    """
+    Быстрая перерисовка превью талька (тот же приём, что и _refresh_type_view):
+    рисует на закэшированном downscaled overview вместо полноразмерного оригинала.
+    """
+    result_id = state["result_id"]
+    view_path = RESULTS_DIR / f"{result_id}_overview_view.jpg"
+    if not view_path.is_file():
+        return
+    bgr = cv2.imread(str(view_path))
+    if bgr is None:
+        return
+    overview_rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
+    vh, vw = overview_rgb.shape[:2]
+    mask_view = _upscale_mask(mask_orig, vw, vh)
+    talc_view = draw_talc_layer(overview_rgb, mask_view)
+    save_overlay(talc_view, str(RESULTS_DIR / f"{result_id}_talc_view.jpg"))
+
+
+def apply_talc_mask_edit(result_id: str, mask_png_bytes: bytes) -> CorrectionsResponse | None:
+    """
+    Сохраняет маску талька, отредактированную вручную (карандаш/ластик/заливка),
+    и пересчитывает метрики/сорт руды.
+    """
+    state = load_state(result_id)
+    if state is None:
+        return None
+
+    mask = cv2.imdecode(np.frombuffer(mask_png_bytes, dtype=np.uint8), cv2.IMREAD_GRAYSCALE)
+    if mask is None:
+        raise ValueError("Некорректная маска талька")
+    mask = (mask > 127).astype(np.uint8) * 255
+
+    img = state.get("image", {})
+    orig_w = int(img.get("original_width") or mask.shape[1])
+    orig_h = int(img.get("original_height") or mask.shape[0])
+    mask_orig = _upscale_mask(mask, orig_w, orig_h)
+    save_talc_layer_png(result_id, mask_orig)
+
+    total_pixels = orig_w * orig_h
+    talc_percent = round(100.0 * float(np.count_nonzero(mask_orig)) / total_pixels, 2) if total_pixels else 0.0
+
+    state["talc_percent"] = talc_percent
+    state["talc_available"] = True
+    state = recalculate_state(state)
+    save_state(state)
+    _refresh_talc_view(state, mask_orig)
+
+    resp = _state_to_response(state)
+    return CorrectionsResponse(
+        result_id=resp["result_id"],
+        sort_label_ru=resp["sort_label_ru"],
+        sort_code=resp["sort_code"],
+        conclusion=resp["conclusion"],
+        explanation=resp["explanation"],
+        counts=resp["counts"],
+        metrics=resp["metrics"],
+        grains=resp["grains"],
+    )
 
 
 def apply_grain_corrections(result_id: str, updates: list[dict[str, Any]]) -> CorrectionsResponse | None:
@@ -388,12 +458,24 @@ def get_pdf_bytes(result_id: str) -> bytes | None:
     # заново, чтобы PDF отражал правки зёрен, внесённые после анализа.
     type_layer_rgb = draw_type_layer(overview_rgb, state["grains"]) if overview_rgb is not None else None
 
+    # Аналогично для талька: {result_id}_talc.png — актуальная маска (в т.ч.
+    # после ручной правки карандашом/ластиком/заливкой), рисуем поверх заново
+    # вместо статичного _talc_layer.jpg со времени анализа.
+    talc_layer_rgb = None
+    talc_mask_path = RESULTS_DIR / f"{result_id}_talc.png"
+    if overview_rgb is not None and talc_mask_path.is_file():
+        talc_mask = cv2.imread(str(talc_mask_path), cv2.IMREAD_GRAYSCALE)
+        if talc_mask is not None:
+            talc_layer_rgb = draw_talc_layer(overview_rgb, talc_mask)
+    if talc_layer_rgb is None:
+        talc_layer_rgb = _load_jpg("talc_layer")
+
     return build_pdf_bytes(
         metrics=report_metrics,
         conclusion=state["conclusion"],
         explanation=state.get("explanation", ""),
         overview_rgb=overview_rgb,
-        talc_layer_rgb=_load_jpg("talc_layer"),
+        talc_layer_rgb=talc_layer_rgb,
         type_layer_rgb=type_layer_rgb,
         counts=state.get("counts"),
     )

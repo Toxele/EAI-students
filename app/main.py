@@ -10,6 +10,7 @@ from fastapi.responses import FileResponse, PlainTextResponse, Response
 from app.api.routes import (
     analyze_upload,
     apply_grain_corrections,
+    apply_talc_mask_edit,
     get_csv_content,
     get_labels_json,
     get_original_image_path,
@@ -63,6 +64,19 @@ def post_corrections(result_id: str, body: CorrectionsRequest) -> CorrectionsRes
     """Применить правки зёрен (класс / bbox / ложная детекция) и пересчитать метрики."""
     updates = [u.model_dump(exclude_none=True) for u in body.grains]
     result = apply_grain_corrections(result_id, updates)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Результат не найден")
+    return result
+
+
+@app.post("/result/{result_id}/talc-mask", response_model=CorrectionsResponse)
+async def post_talc_mask(result_id: str, mask: UploadFile = File(...)) -> CorrectionsResponse:
+    """Сохранить отредактированную маску талька (карандаш/ластик/заливка) и пересчитать метрики."""
+    data = await mask.read()
+    try:
+        result = apply_talc_mask_edit(result_id, data)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     if result is None:
         raise HTTPException(status_code=404, detail="Результат не найден")
     return result

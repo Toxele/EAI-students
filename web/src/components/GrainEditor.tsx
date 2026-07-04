@@ -9,30 +9,31 @@ import {
   Stack,
   Group,
   Progress,
-  ThemeIcon,
 } from "@mantine/core";
-import { IconEdit, IconClick } from "@tabler/icons-react";
 import type { Grain, GrainStatus } from "../types";
 import { statusLabel } from "../api";
+import UndoRedoButtons from "./UndoRedoButtons";
 
 interface Props {
   grain: Grain | null;
   onBboxChange: (id: number, bbox: [number, number, number, number]) => void;
   onSave: (id: number, status: GrainStatus, bbox: [number, number, number, number]) => void;
   saving: boolean;
+  canUndo: boolean;
+  canRedo: boolean;
+  onUndo: () => void;
+  onRedo: () => void;
 }
 
-export default function GrainEditor({ grain, onBboxChange, onSave, saving }: Props) {
+export default function GrainEditor({ grain, onBboxChange, onSave, saving, canUndo, canRedo, onUndo, onRedo }: Props) {
   const [status, setStatus] = useState<GrainStatus>("ordinary");
 
   if (!grain) {
     return (
       <Paper p="md" radius="xl" shadow="xs" withBorder>
-        <Group gap="sm" mb="xs">
-          <ThemeIcon size="md" variant="light" color="gray" radius="md">
-            <IconClick size={16} />
-          </ThemeIcon>
+        <Group gap="sm" mb="xs" justify="space-between">
           <Title order={5}>Зерно</Title>
+          <UndoRedoButtons canUndo={canUndo} canRedo={canRedo} onUndo={onUndo} onRedo={onRedo} />
         </Group>
         <Text size="sm" c="dimmed">
           Переключитесь на слой «Тип» и кликните по bbox
@@ -53,11 +54,9 @@ export default function GrainEditor({ grain, onBboxChange, onSave, saving }: Pro
 
   return (
     <Paper p="md" radius="xl" shadow="xs" withBorder>
-      <Group gap="sm" mb="md">
-        <ThemeIcon size="md" variant="light" color="nornickel" radius="md">
-          <IconEdit size={16} />
-        </ThemeIcon>
+      <Group gap="sm" mb="md" justify="space-between">
         <Title order={5}>Зерно #{grain.id}</Title>
+        <UndoRedoButtons canUndo={canUndo} canRedo={canRedo} onUndo={onUndo} onRedo={onRedo} />
       </Group>
 
       <Stack gap="xs" mb="md">

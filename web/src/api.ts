@@ -36,6 +36,20 @@ export async function applyCorrections(
   return { ...data, result_id: data.result_id };
 }
 
+export async function applyTalcMask(resultId: string, maskPng: Blob): Promise<AnalysisResult> {
+  const form = new FormData();
+  form.append("mask", maskPng, "mask.png");
+  const res = await fetch(`${API}/result/${resultId}/talc-mask`, {
+    method: "POST",
+    body: form,
+  });
+  if (!res.ok) {
+    throw new Error("Не удалось сохранить маску талька");
+  }
+  const data = await res.json();
+  return { ...data, result_id: data.result_id };
+}
+
 export function absUrl(path: string | null): string {
   if (!path) return "";
   return path.startsWith("http") ? path : `${API}${path}`;

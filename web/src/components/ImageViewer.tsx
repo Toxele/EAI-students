@@ -1,11 +1,17 @@
-import { useEffect, useRef, useCallback, useState } from "react";
+import { useEffect, useRef, useCallback, useState, forwardRef, useImperativeHandle } from "react";
 import OpenSeadragon from "openseadragon";
 import { Badge, Paper, ActionIcon, Tooltip, Group, Text, Loader } from "@mantine/core";
 import { IconPlus, IconMinus, IconZoomScan } from "@tabler/icons-react";
-import type { Grain, LayerMode } from "../types";
-import { absUrl, grainColor } from "../api";
+import type { AnalysisResult, Grain, LayerMode, TalcTool } from "../types";
+import { absUrl, applyTalcMask, grainColor } from "../api";
 
 const MAX_SVG_GRAINS = 800;
+// Тальк редактируется на уменьшенном растре (иначе canvas 10000x10000 px
+// слишком тяжёлый для перерисовки на каждый pointermove); маска
+// апскейлится обратно на бэкенде при сохранении (nearest-neighbor).
+const TALC_EDIT_MAX_SIDE = 2048;
+const TALC_COLOR_RGB = "40, 120, 255";
+const TALC_HISTORY_LIMIT = 20;
 
 type Corner = "tl" | "tr" | "bl" | "br";
 type EdgeMid = "t" | "b" | "l" | "r";
@@ -33,7 +39,7 @@ interface DragState {
 
 interface Props {
   imageUrl: string;
-  talcDisplayUrl: string | null;
+  talcMaskUrl: string | null;
   typeLayerUrl: string | null;
   grains: Grain[];
   layer: LayerMode;
@@ -42,34 +48,58 @@ interface Props {
   selectedId: number | null;
   onSelectGrain: (id: number | null) => void;
   onGrainBboxChange?: (id: number, bbox: [number, number, number, number]) => void;
+  onGrainDragStart?: () => void;
+  resultId: string;
+  talcTool: TalcTool | null;
+  talcBrushSize: number;
+  onTalcDirtyChange?: (dirty: boolean) => void;
+  onTalcHistoryChange?: (canUndo: boolean, canRedo: boolean) => void;
+  onTalcSaved?: (updated: AnalysisResult) => void;
+  onTalcSaveError?: (message: string) => void;
 }
 
-export default function ImageViewer({
-  imageUrl,
-  talcDisplayUrl,
-  typeLayerUrl,
-  grains,
-  layer,
-  imageWidth,
-  imageHeight,
-  selectedId,
-  onSelectGrain,
-  onGrainBboxChange,
-}: Props) {
+export interface ImageViewerHandle {
+  saveTalcMask: () => Promise<void>;
+  undoTalc: () => void;
+  redoTalc: () => void;
+}
+
+const ImageViewer = forwardRef<ImageViewerHandle, Props>(function ImageViewer(
+  {
+    imageUrl,
+    talcMaskUrl,
+    typeLayerUrl,
+    grains,
+    layer,
+    imageWidth,
+    imageHeight,
+    selectedId,
+    onSelectGrain,
+    onGrainBboxChange,
+    onGrainDragStart,
+    resultId,
+    talcTool,
+    talcBrushSize,
+    onTalcDirtyChange,
+    onTalcHistoryChange,
+    onTalcSaved,
+    onTalcSaveError,
+  },
+  ref
+) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const osdRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const viewerRef = useRef<OpenSeadragon.Viewer | null>(null);
-  const talcItemRef = useRef<OpenSeadragon.TiledImage | null>(null);
   const typeItemRef = useRef<OpenSeadragon.TiledImage | null>(null);
   const [drawStats, setDrawStats] = useState({ drawn: 0, total: 0 });
-  const [talcLoading, setTalcLoading] = useState(false);
 
   const layerRef = useRef(layer);
   const grainsRef = useRef(grains);
   const selectedIdRef = useRef(selectedId);
   const onSelectRef = useRef(onSelectGrain);
   const onBboxChangeRef = useRef(onGrainBboxChange);
+  const onGrainDragStartRef = useRef(onGrainDragStart);
   const dragStateRef = useRef<DragState | null>(null);
   const pendingBboxRef = useRef<{ id: number; bbox: [number, number, number, number] } | null>(null);
   const rafRef = useRef<number | null>(null);
@@ -78,6 +108,52 @@ export default function ImageViewer({
   selectedIdRef.current = selectedId;
   onSelectRef.current = onSelectGrain;
   onBboxChangeRef.current = onGrainBboxChange;
+  onGrainDragStartRef.current = onGrainDragStart;
+
+  // --- Редактирование маски талька (карандаш/ластик/заливка) ---
+  const talcScreenCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const talcOffscreenRef = useRef<HTMLCanvasElement | null>(null);
+  const talcReadyRef = useRef(false);
+  const talcStrokeActiveRef = useRef(false);
+  const talcLastPointRef = useRef<{ x: number; y: number } | null>(null);
+  const talcToolRef = useRef(talcTool);
+  const talcBrushSizeRef = useRef(talcBrushSize);
+  const onTalcSavedRef = useRef(onTalcSaved);
+  const onTalcSaveErrorRef = useRef(onTalcSaveError);
+  const onTalcDirtyChangeRef = useRef(onTalcDirtyChange);
+  const onTalcHistoryChangeRef = useRef(onTalcHistoryChange);
+  const talcUndoStackRef = useRef<ImageData[]>([]);
+  const talcRedoStackRef = useRef<ImageData[]>([]);
+  const [talcLoading, setTalcLoading] = useState(false);
+  const [talcDirty, setTalcDirty] = useState(false);
+  talcToolRef.current = talcTool;
+  talcBrushSizeRef.current = talcBrushSize;
+  onTalcSavedRef.current = onTalcSaved;
+  onTalcSaveErrorRef.current = onTalcSaveError;
+  onTalcDirtyChangeRef.current = onTalcDirtyChange;
+  onTalcHistoryChangeRef.current = onTalcHistoryChange;
+
+  useEffect(() => {
+    onTalcDirtyChangeRef.current?.(talcDirty);
+  }, [talcDirty]);
+
+  const notifyTalcHistory = useCallback(() => {
+    onTalcHistoryChangeRef.current?.(talcUndoStackRef.current.length > 0, talcRedoStackRef.current.length > 0);
+  }, []);
+
+  // Снимок маски перед мутирующим действием (начало мазка/заливка) —
+  // основа для undo. Новое действие обнуляет redo-историю.
+  const pushTalcHistory = useCallback(() => {
+    const off = talcOffscreenRef.current;
+    const ctx = off?.getContext("2d");
+    if (!ctx || !off) return;
+    const snapshot = ctx.getImageData(0, 0, off.width, off.height);
+    const stack = talcUndoStackRef.current;
+    stack.push(snapshot);
+    if (stack.length > TALC_HISTORY_LIMIT) stack.shift();
+    talcRedoStackRef.current = [];
+    notifyTalcHistory();
+  }, [notifyTalcHistory]);
 
   const clientToImagePoint = useCallback((clientX: number, clientY: number) => {
     const viewer = viewerRef.current;
@@ -92,20 +168,41 @@ export default function ImageViewer({
   const syncOpacities = useCallback(() => {
     const viewer = viewerRef.current;
     if (!viewer || viewer.world.getItemCount() === 0) return;
-
-    const base = viewer.world.getItemAt(0);
-    const talc = talcItemRef.current;
-    const mode = layerRef.current;
-
-    if (mode === "talc" && talc?.getFullyLoaded()) {
-      base.setOpacity(0);
-      talc.setOpacity(1);
-    } else {
-      base.setOpacity(1);
-      talc?.setOpacity(0);
-    }
+    viewer.world.getItemAt(0).setOpacity(1);
     typeItemRef.current?.setOpacity(0);
   }, []);
+
+  const drawTalcCanvas = useCallback(() => {
+    const canvas = talcScreenCanvasRef.current;
+    const wrap = wrapRef.current;
+    if (!canvas || !wrap) return;
+
+    const cw = wrap.clientWidth;
+    const ch = wrap.clientHeight;
+    if (canvas.width !== cw) canvas.width = cw;
+    if (canvas.height !== ch) canvas.height = ch;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const viewer = viewerRef.current;
+    const off = talcOffscreenRef.current;
+    if (layerRef.current !== "talc" || !viewer || !off || !talcReadyRef.current) return;
+
+    const viewport = viewer.viewport;
+    const p1 = viewport.imageToViewerElementCoordinates(new OpenSeadragon.Point(0, 0));
+    const p2 = viewport.imageToViewerElementCoordinates(new OpenSeadragon.Point(imageWidth, imageHeight));
+
+    // off хранит маску как непрозрачно-белую фигуру на прозрачном фоне —
+    // перекрашиваем в полупрозрачный синий через source-atop (красит только
+    // там, где уже есть alpha, форму не меняет).
+    ctx.drawImage(off, p1.x, p1.y, p2.x - p1.x, p2.y - p1.y);
+    ctx.globalCompositeOperation = "source-atop";
+    ctx.fillStyle = `rgba(${TALC_COLOR_RGB}, 0.55)`;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.globalCompositeOperation = "source-over";
+  }, [imageWidth, imageHeight]);
 
   const drawSvgBboxes = useCallback(() => {
     const viewer = viewerRef.current;
@@ -180,6 +277,7 @@ export default function ImageViewer({
           e.preventDefault();
           const startPt = clientToImagePoint(e.clientX, e.clientY);
           if (!startPt) return;
+          onGrainDragStartRef.current?.();
           viewer.setMouseNavEnabled(false);
           dragStateRef.current = {
             grainId: g.id,
@@ -204,6 +302,7 @@ export default function ImageViewer({
           handle.addEventListener("pointerdown", (e) => {
             e.stopPropagation();
             e.preventDefault();
+            onGrainDragStartRef.current?.();
             viewer.setMouseNavEnabled(false);
             dragStateRef.current = {
               grainId: g.id,
@@ -326,7 +425,8 @@ export default function ImageViewer({
   const refresh = useCallback(() => {
     syncOpacities();
     drawSvgBboxes();
-  }, [syncOpacities, drawSvgBboxes]);
+    drawTalcCanvas();
+  }, [syncOpacities, drawSvgBboxes, drawTalcCanvas]);
 
   const addAlignedImage = useCallback(
     (
@@ -346,8 +446,8 @@ export default function ImageViewer({
           //
           // Only width is passed: OpenSeadragon derives height from the
           // loaded image's own aspect ratio and logs an error if both are
-          // given (dropping height silently). Talc/type layers share the
-          // base image's aspect ratio, so width alone aligns them exactly.
+          // given (dropping height silently). Талька/type-слои используют
+          // тот же aspect ratio, что и base — ширины достаточно для align.
           const ret = viewer.addSimpleImage({
             url: absUrl(url),
             x: b.x,
@@ -395,20 +495,6 @@ export default function ImageViewer({
     const onMove = () => refresh();
 
     viewer.addHandler("open", async () => {
-      if (talcDisplayUrl && !talcItemRef.current) {
-        setTalcLoading(true);
-        const item = await addAlignedImage(viewer, talcDisplayUrl, true);
-        if (item) {
-          talcItemRef.current = item;
-          setTalcLoading(!item.getFullyLoaded());
-          item.addHandler("fully-loaded-change", () => {
-            setTalcLoading(!item.getFullyLoaded());
-            refresh();
-          });
-        } else {
-          setTalcLoading(false);
-        }
-      }
       if (typeLayerUrl && !typeItemRef.current) {
         typeItemRef.current = await addAlignedImage(viewer, typeLayerUrl);
       }
@@ -422,14 +508,90 @@ export default function ImageViewer({
     return () => {
       viewer.destroy();
       viewerRef.current = null;
-      talcItemRef.current = null;
       typeItemRef.current = null;
       if (rafRef.current != null) {
         cancelAnimationFrame(rafRef.current);
         rafRef.current = null;
       }
     };
-  }, [imageUrl, talcDisplayUrl, typeLayerUrl, addAlignedImage, refresh]);
+  }, [imageUrl, typeLayerUrl, addAlignedImage, refresh]);
+
+  // Загрузка/инициализация редактируемого растра талька — при смене
+  // результата анализа (новый result_id => новый talcMaskUrl). Правки,
+  // сделанные на клиенте, не перезагружаются повторно с сервера.
+  useEffect(() => {
+    talcReadyRef.current = false;
+    talcStrokeActiveRef.current = false;
+    talcLastPointRef.current = null;
+    setTalcDirty(false);
+    talcUndoStackRef.current = [];
+    talcRedoStackRef.current = [];
+    notifyTalcHistory();
+
+    const longSide = Math.max(imageWidth, imageHeight, 1);
+    const scale = Math.min(1, TALC_EDIT_MAX_SIDE / longSide);
+    const workingW = Math.max(1, Math.round(imageWidth * scale));
+    const workingH = Math.max(1, Math.round(imageHeight * scale));
+
+    const off = document.createElement("canvas");
+    off.width = workingW;
+    off.height = workingH;
+    talcOffscreenRef.current = off;
+
+    let cancelled = false;
+    const finish = () => {
+      if (cancelled) return;
+      talcReadyRef.current = true;
+      setTalcLoading(false);
+      drawTalcCanvas();
+    };
+
+    if (!talcMaskUrl) {
+      finish();
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setTalcLoading(true);
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      if (cancelled) return;
+      const tmp = document.createElement("canvas");
+      tmp.width = workingW;
+      tmp.height = workingH;
+      const tctx = tmp.getContext("2d");
+      if (!tctx) {
+        finish();
+        return;
+      }
+      // Без сглаживания: исходная маска бинарна (0/255), а бикубическое/
+      // билинейное масштабирование создаёт промежуточные alpha-значения на
+      // границах, из-за которых заливка после порога >127 могла оставлять
+      // тонкий незакрашенный "шов" на стыке соседних областей.
+      tctx.imageSmoothingEnabled = false;
+      tctx.drawImage(img, 0, 0, workingW, workingH);
+      const imgData = tctx.getImageData(0, 0, workingW, workingH);
+      const d = imgData.data;
+      for (let i = 0; i < d.length; i += 4) {
+        const on = d[i] > 127;
+        d[i] = 255;
+        d[i + 1] = 255;
+        d[i + 2] = 255;
+        d[i + 3] = on ? 255 : 0;
+      }
+      const offCtx = off.getContext("2d");
+      offCtx?.putImageData(imgData, 0, 0);
+      finish();
+    };
+    img.onerror = () => finish();
+    img.src = absUrl(talcMaskUrl);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [talcMaskUrl, imageWidth, imageHeight, drawTalcCanvas, notifyTalcHistory]);
 
   useEffect(() => {
     refresh();
@@ -438,12 +600,236 @@ export default function ImageViewer({
     return () => window.clearTimeout(t);
   }, [layer, grains, selectedId, refresh]);
 
+  const imageToMaskPoint = useCallback(
+    (imgPt: { x: number; y: number }) => {
+      const off = talcOffscreenRef.current;
+      if (!off || imageWidth <= 0 || imageHeight <= 0) return null;
+      return { x: (imgPt.x * off.width) / imageWidth, y: (imgPt.y * off.height) / imageHeight };
+    },
+    [imageWidth, imageHeight]
+  );
+
+  const stampTalc = useCallback((x: number, y: number, tool: TalcTool, radius: number) => {
+    const off = talcOffscreenRef.current;
+    const ctx = off?.getContext("2d");
+    if (!ctx) return;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    if (tool === "eraser") {
+      // destination-out стирает alpha независимо от цвета — так ластик
+      // корректно убирает ранее закрашенные пиксели.
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.fillStyle = "rgba(0, 0, 0, 1)";
+    } else {
+      ctx.globalCompositeOperation = "source-over";
+      ctx.fillStyle = "#fff";
+    }
+    ctx.fill();
+    ctx.globalCompositeOperation = "source-over";
+  }, []);
+
+  const strokeTalc = useCallback(
+    (from: { x: number; y: number } | null, to: { x: number; y: number }, tool: TalcTool, radius: number) => {
+      if (!from) {
+        stampTalc(to.x, to.y, tool, radius);
+        return;
+      }
+      const dist = Math.hypot(to.x - from.x, to.y - from.y);
+      const step = Math.max(1, radius / 2);
+      const steps = Math.max(1, Math.ceil(dist / step));
+      for (let s = 1; s <= steps; s++) {
+        const t = s / steps;
+        stampTalc(from.x + (to.x - from.x) * t, from.y + (to.y - from.y) * t, tool, radius);
+      }
+    },
+    [stampTalc]
+  );
+
+  const floodFillTalc = useCallback((px: number, py: number) => {
+    const off = talcOffscreenRef.current;
+    const ctx = off?.getContext("2d");
+    if (!ctx || !off) return;
+    const w = off.width;
+    const h = off.height;
+    if (px < 0 || py < 0 || px >= w || py >= h) return;
+
+    const imgData = ctx.getImageData(0, 0, w, h);
+    const data = imgData.data;
+    const startOn = data[(py * w + px) * 4 + 3] > 0;
+    const visited = new Uint8Array(w * h);
+    const stack: number[] = [py * w + px];
+
+    // Заливка меняет связную область на противоположное состояние: клик по
+    // пустой зоне закрашивает её тальком, клик по закрашенной — снимает.
+    while (stack.length) {
+      const p = stack.pop() as number;
+      if (visited[p]) continue;
+      const idx = p * 4;
+      if (data[idx + 3] > 0 !== startOn) continue;
+      visited[p] = 1;
+      data[idx] = 255;
+      data[idx + 1] = 255;
+      data[idx + 2] = 255;
+      data[idx + 3] = startOn ? 0 : 255;
+
+      // 8-связность (с диагоналями) — устойчивее к одно-пиксельным
+      // диагональным разрывам на границе от сглаживания при загрузке маски.
+      const cx = p % w;
+      const cy = (p / w) | 0;
+      const hasL = cx > 0;
+      const hasR = cx < w - 1;
+      const hasT = cy > 0;
+      const hasB = cy < h - 1;
+      if (hasL) stack.push(p - 1);
+      if (hasR) stack.push(p + 1);
+      if (hasT) stack.push(p - w);
+      if (hasB) stack.push(p + w);
+      if (hasL && hasT) stack.push(p - w - 1);
+      if (hasR && hasT) stack.push(p - w + 1);
+      if (hasL && hasB) stack.push(p + w - 1);
+      if (hasR && hasB) stack.push(p + w + 1);
+    }
+
+    ctx.putImageData(imgData, 0, 0);
+  }, []);
+
+  const handleTalcPointerDown = useCallback(
+    (e: React.PointerEvent<HTMLCanvasElement>) => {
+      const tool = talcToolRef.current;
+      if (!tool || tool === "cursor" || !talcReadyRef.current) return;
+      const imgPt = clientToImagePoint(e.clientX, e.clientY);
+      if (!imgPt) return;
+      const mp = imageToMaskPoint(imgPt);
+      if (!mp) return;
+
+      e.stopPropagation();
+      e.preventDefault();
+      e.currentTarget.setPointerCapture(e.pointerId);
+      viewerRef.current?.setMouseNavEnabled(false);
+
+      if (tool === "fill") {
+        pushTalcHistory();
+        floodFillTalc(Math.round(mp.x), Math.round(mp.y));
+        setTalcDirty(true);
+        drawTalcCanvas();
+        viewerRef.current?.setMouseNavEnabled(true);
+        return;
+      }
+
+      pushTalcHistory();
+      talcStrokeActiveRef.current = true;
+      strokeTalc(null, mp, tool, talcBrushSizeRef.current);
+      talcLastPointRef.current = mp;
+      setTalcDirty(true);
+      drawTalcCanvas();
+    },
+    [clientToImagePoint, imageToMaskPoint, floodFillTalc, strokeTalc, drawTalcCanvas, pushTalcHistory]
+  );
+
+  const handleTalcPointerMove = useCallback(
+    (e: React.PointerEvent<HTMLCanvasElement>) => {
+      if (!talcStrokeActiveRef.current) return;
+      const tool = talcToolRef.current;
+      if (!tool || tool === "fill" || tool === "cursor") return;
+      const imgPt = clientToImagePoint(e.clientX, e.clientY);
+      if (!imgPt) return;
+      const mp = imageToMaskPoint(imgPt);
+      if (!mp) return;
+      strokeTalc(talcLastPointRef.current, mp, tool, talcBrushSizeRef.current);
+      talcLastPointRef.current = mp;
+      drawTalcCanvas();
+    },
+    [clientToImagePoint, imageToMaskPoint, strokeTalc, drawTalcCanvas]
+  );
+
+  const handleTalcPointerUp = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+    talcStrokeActiveRef.current = false;
+    talcLastPointRef.current = null;
+    viewerRef.current?.setMouseNavEnabled(true);
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+  }, []);
+
+  const saveTalcMask = useCallback(async () => {
+    const off = talcOffscreenRef.current;
+    if (!off) return;
+    const blob: Blob | null = await new Promise((resolve) => off.toBlob(resolve, "image/png"));
+    if (!blob) return;
+    try {
+      const updated = await applyTalcMask(resultId, blob);
+      setTalcDirty(false);
+      onTalcSavedRef.current?.(updated);
+    } catch (err) {
+      onTalcSaveErrorRef.current?.(err instanceof Error ? err.message : "Ошибка сохранения маски талька");
+    }
+  }, [resultId]);
+
+  const undoTalc = useCallback(() => {
+    const off = talcOffscreenRef.current;
+    const ctx = off?.getContext("2d");
+    const undoStack = talcUndoStackRef.current;
+    if (!ctx || !off || undoStack.length === 0) return;
+    const current = ctx.getImageData(0, 0, off.width, off.height);
+    const prev = undoStack.pop() as ImageData;
+    talcRedoStackRef.current.push(current);
+    ctx.putImageData(prev, 0, 0);
+    setTalcDirty(true);
+    notifyTalcHistory();
+    drawTalcCanvas();
+  }, [drawTalcCanvas, notifyTalcHistory]);
+
+  const redoTalc = useCallback(() => {
+    const off = talcOffscreenRef.current;
+    const ctx = off?.getContext("2d");
+    const redoStack = talcRedoStackRef.current;
+    if (!ctx || !off || redoStack.length === 0) return;
+    const current = ctx.getImageData(0, 0, off.width, off.height);
+    const next = redoStack.pop() as ImageData;
+    talcUndoStackRef.current.push(current);
+    ctx.putImageData(next, 0, 0);
+    setTalcDirty(true);
+    notifyTalcHistory();
+    drawTalcCanvas();
+  }, [drawTalcCanvas, notifyTalcHistory]);
+
+  useImperativeHandle(ref, () => ({ saveTalcMask, undoTalc, redoTalc }), [saveTalcMask, undoTalc, redoTalc]);
+
   const zoomBy = (factor: number) => {
     viewerRef.current?.viewport.zoomBy(factor);
     viewerRef.current?.viewport.applyConstraints(true);
   };
 
+  // Колесо мыши над канвасом талька — зум к курсору. Канвас лежит поверх
+  // OSD как соседний (не вложенный) элемент, поэтому событие колеса до OSD
+  // не доходит само по себе; нужен нативный (не passive) листенер, чтобы
+  // preventDefault реально останавливал прокрутку страницы.
+  useEffect(() => {
+    const canvas = talcScreenCanvasRef.current;
+    if (!canvas) return;
+
+    const onWheel = (e: WheelEvent) => {
+      const tool = talcToolRef.current;
+      if (layerRef.current !== "talc" || !tool || tool === "cursor") return;
+      const viewer = viewerRef.current;
+      const osdEl = osdRef.current;
+      if (!viewer || !osdEl) return;
+      e.preventDefault();
+      const bounds = osdEl.getBoundingClientRect();
+      const point = viewer.viewport.pointFromPixel(
+        new OpenSeadragon.Point(e.clientX - bounds.left, e.clientY - bounds.top)
+      );
+      const factor = e.deltaY < 0 ? 1.2 : 1 / 1.2;
+      viewer.viewport.zoomBy(factor, point);
+      viewer.viewport.applyConstraints();
+    };
+
+    canvas.addEventListener("wheel", onWheel, { passive: false });
+    return () => canvas.removeEventListener("wheel", onWheel);
+  }, []);
+
   const showSvg = layer === "type";
+  const showTalc = layer === "talc";
 
   return (
     <div ref={wrapRef} className="viewer-wrap">
@@ -455,6 +841,19 @@ export default function ImageViewer({
         onPointerMove={handleSvgPointerMove}
         onPointerUp={handleSvgPointerUp}
         onPointerCancel={handleSvgPointerUp}
+      />
+      <canvas
+        ref={talcScreenCanvasRef}
+        className={`viewer-talc-canvas${showTalc ? " is-active" : ""}`}
+        aria-hidden={!showTalc}
+        style={{
+          pointerEvents: showTalc && talcTool && talcTool !== "cursor" ? "auto" : "none",
+          cursor: talcTool === "cursor" ? "grab" : talcTool ? "crosshair" : "default",
+        }}
+        onPointerDown={handleTalcPointerDown}
+        onPointerMove={handleTalcPointerMove}
+        onPointerUp={handleTalcPointerUp}
+        onPointerCancel={handleTalcPointerUp}
       />
 
       <Paper className="viewer-controls" shadow="md" radius="md" p={4}>
@@ -486,14 +885,19 @@ export default function ImageViewer({
         <Badge variant="light" color="gray" size="sm">
           {imageWidth}×{imageHeight}
         </Badge>
-        {layer === "talc" && talcLoading && (
+        {showTalc && talcLoading && (
           <Badge variant="light" color="blue" size="sm" leftSection={<Loader color="blue" size={10} />}>
             слой талька загружается…
           </Badge>
         )}
-        {layer === "talc" && !talcLoading && (
+        {showTalc && !talcLoading && (
           <Badge variant="light" color="blue" size="sm">
             слой: тальк
+          </Badge>
+        )}
+        {showTalc && talcDirty && (
+          <Badge variant="light" color="orange" size="sm">
+            есть несохранённые правки
           </Badge>
         )}
         {showSvg && drawStats.total > drawStats.drawn && (
@@ -504,4 +908,6 @@ export default function ImageViewer({
       </Group>
     </div>
   );
-}
+});
+
+export default ImageViewer;

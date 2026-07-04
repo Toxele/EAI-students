@@ -60,3 +60,5 @@ export interface AnalysisResult {
 }
 
 export type LayerMode = "overview" | "talc" | "type";
+
+export type TalcTool = "cursor" | "pencil" | "eraser" | "fill";

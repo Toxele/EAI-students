@@ -27,6 +27,11 @@ class TalcSegmenter:
         self._weights = weights_path or TALC_SEGMENTER_WEIGHTS
         self._try_load()
 
+    @property
+    def ready(self) -> bool:
+        """True, если веса загружены и модель готова к инференсу."""
+        return self._ready
+
     def _try_load(self) -> None:
         if not self._weights.exists():
             logger.warning("Talc segmenter weights not found: %s", self._weights)

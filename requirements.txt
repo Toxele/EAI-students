@@ -8,6 +8,7 @@ scikit-learn>=1.4
 ipykernel>=6.29
 jupyter>=1.0
 mlflow>=2.14
+torch>=2.0
 segmentation-models-pytorch>=0.3.3
 
 # Ore Analyzer web app (FastAPI + Streamlit)

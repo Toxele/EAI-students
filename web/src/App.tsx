@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import {
   AppShell,
   Group,
@@ -26,11 +26,12 @@ import {
   IconDownload,
   IconAlertCircle,
 } from "@tabler/icons-react";
-import type { AnalysisResult, GrainStatus, LayerMode } from "./types";
+import type { AnalysisResult, Grain, GrainStatus, LayerMode, TalcTool } from "./types";
 import { analyzeFile, applyCorrections, absUrl } from "./api";
-import ImageViewer from "./components/ImageViewer";
+import ImageViewer, { type ImageViewerHandle } from "./components/ImageViewer";
 import MetricsPanel from "./components/MetricsPanel";
 import GrainEditor from "./components/GrainEditor";
+import TalcMaskEditor from "./components/TalcMaskEditor";
 
 const LAYER_OPTIONS = [
   { label: "Обзор", value: "overview" },
@@ -80,14 +81,39 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<string>("auto");
   const fileRef = useRef<HTMLInputElement>(null);
+  const imageViewerRef = useRef<ImageViewerHandle>(null);
+
+  const [talcTool, setTalcTool] = useState<TalcTool>("cursor");
+  const [talcBrushSize, setTalcBrushSize] = useState(16);
+  const [talcDirty, setTalcDirty] = useState(false);
+  const [talcSaving, setTalcSaving] = useState(false);
+  const [talcUndoAvailable, setTalcUndoAvailable] = useState(false);
+  const [talcRedoAvailable, setTalcRedoAvailable] = useState(false);
+
+  const grainUndoStackRef = useRef<Grain[][]>([]);
+  const grainRedoStackRef = useRef<Grain[][]>([]);
+  const [grainUndoAvailable, setGrainUndoAvailable] = useState(false);
+  const [grainRedoAvailable, setGrainRedoAvailable] = useState(false);
+  const GRAIN_HISTORY_LIMIT = 50;
 
   const selectedGrain = result?.grains.find((g) => g.id === selectedId) ?? null;
+
+  // "Тип" доступна только для панорамы: и при явном выборе режима, и при
+  // "авто", если снимок определился как панорама (result.mode).
+  const layerOptions = result
+    ? LAYER_OPTIONS.filter((o) => o.value !== "type" || result.mode === "panorama")
+    : LAYER_OPTIONS;
 
   const handleFile = async (file: File | null) => {
     if (!file) return;
     setLoading(true);
     setError(null);
     setSelectedId(null);
+    setTalcDirty(false);
+    grainUndoStackRef.current = [];
+    grainRedoStackRef.current = [];
+    setGrainUndoAvailable(false);
+    setGrainRedoAvailable(false);
     try {
       const data = await analyzeFile(
         file,
@@ -101,6 +127,129 @@ export default function App() {
       setLoading(false);
     }
   };
+
+  const handleSaveTalcMask = useCallback(async () => {
+    setTalcSaving(true);
+    try {
+      await imageViewerRef.current?.saveTalcMask();
+    } finally {
+      setTalcSaving(false);
+    }
+  }, []);
+
+  const handleTalcSaved = useCallback((updated: AnalysisResult) => {
+    setResult((prev) =>
+      prev
+        ? {
+            ...prev,
+            ...updated,
+            grains: updated.grains,
+            counts: updated.counts,
+            metrics: updated.metrics,
+            image_url: prev.image_url,
+            talc_display_url: prev.talc_display_url,
+            talc_layer_url: prev.talc_layer_url,
+            type_layer_url: prev.type_layer_url,
+            original_width: prev.original_width,
+            original_height: prev.original_height,
+          }
+        : prev
+    );
+  }, []);
+
+  const handleTalcSaveError = useCallback((message: string) => {
+    setError(message);
+  }, []);
+
+  const handleTalcHistoryChange = useCallback((canUndo: boolean, canRedo: boolean) => {
+    setTalcUndoAvailable(canUndo);
+    setTalcRedoAvailable(canRedo);
+  }, []);
+
+  // Снимок массива зёрен перед мутирующим действием (начало drag / перед
+  // сохранением правки) — основа для undo вкладки «Тип». Сами объекты
+  // зёрен не мутируются на месте (везде spread), поэтому неглубокой копии
+  // массива достаточно, чтобы сохранить прежнее состояние.
+  const pushGrainSnapshot = useCallback(() => {
+    if (!result) return;
+    const stack = grainUndoStackRef.current;
+    stack.push(result.grains);
+    if (stack.length > GRAIN_HISTORY_LIMIT) stack.shift();
+    grainRedoStackRef.current = [];
+    setGrainUndoAvailable(true);
+    setGrainRedoAvailable(false);
+  }, [result]);
+
+  // Применяет снимок зёрен: сразу локально (для отклика UI), затем
+  // синхронизирует с бэкендом (пересчёт метрик/сорта) минимальным диффом.
+  const applyGrainSnapshot = useCallback(
+    async (target: Grain[]) => {
+      if (!result) return;
+      const targetById = new Map(target.map((g) => [g.id, g]));
+      const updates: { id: number; status?: GrainStatus; bbox?: number[] }[] = [];
+      for (const g of result.grains) {
+        const was = targetById.get(g.id);
+        if (!was) continue;
+        const bboxChanged = was.bbox.some((v, i) => v !== g.bbox[i]);
+        const statusChanged = was.status !== g.status;
+        if (bboxChanged || statusChanged) {
+          updates.push({
+            id: g.id,
+            ...(statusChanged ? { status: g.status } : {}),
+            ...(bboxChanged ? { bbox: g.bbox } : {}),
+          });
+        }
+      }
+
+      const resultId = result.result_id;
+      setResult((prev) => (prev ? { ...prev, grains: target } : prev));
+      if (updates.length === 0) return;
+
+      try {
+        const updated = await applyCorrections(resultId, updates);
+        setResult((prev) =>
+          prev
+            ? {
+                ...prev,
+                ...updated,
+                grains: updated.grains,
+                counts: updated.counts,
+                metrics: updated.metrics,
+                image_url: prev.image_url,
+                talc_display_url: prev.talc_display_url,
+                talc_layer_url: prev.talc_layer_url,
+                type_layer_url: prev.type_layer_url,
+                original_width: prev.original_width,
+                original_height: prev.original_height,
+              }
+            : prev
+        );
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Ошибка отмены/повтора");
+      }
+    },
+    [result]
+  );
+
+  const undoGrain = useCallback(() => {
+    const undoStack = grainUndoStackRef.current;
+    if (!result || undoStack.length === 0) return;
+    const target = undoStack.pop() as Grain[];
+    grainRedoStackRef.current.push(result.grains);
+    setGrainUndoAvailable(undoStack.length > 0);
+    setGrainRedoAvailable(true);
+    void applyGrainSnapshot(target);
+  }, [result, applyGrainSnapshot]);
+
+  const redoGrain = useCallback(() => {
+    const redoStack = grainRedoStackRef.current;
+    if (!result || redoStack.length === 0) return;
+    const target = redoStack.pop() as Grain[];
+    grainUndoStackRef.current.push(result.grains);
+    setGrainRedoAvailable(redoStack.length > 0);
+    setGrainUndoAvailable(true);
+    void applyGrainSnapshot(target);
+  }, [result, applyGrainSnapshot]);
 
   const handleGrainBboxChange = useCallback(
     (id: number, bbox: [number, number, number, number]) => {
@@ -122,6 +271,7 @@ export default function App() {
       bbox: [number, number, number, number]
     ) => {
       if (!result) return;
+      pushGrainSnapshot();
       setSaving(true);
       try {
         const updated = await applyCorrections(result.result_id, [
@@ -149,8 +299,44 @@ export default function App() {
         setSaving(false);
       }
     },
-    [result]
+    [result, pushGrainSnapshot]
   );
+
+  // Диспетчер общей кнопки/сочетания отмены-повтора: смотрит на активную
+  // вкладку и вызывает историю талька (ImageViewer) или зёрен (локальную).
+  const canUndo = layer === "talc" ? talcUndoAvailable : layer === "type" ? grainUndoAvailable : false;
+  const canRedo = layer === "talc" ? talcRedoAvailable : layer === "type" ? grainRedoAvailable : false;
+
+  const handleUndo = useCallback(() => {
+    if (layer === "talc") imageViewerRef.current?.undoTalc();
+    else if (layer === "type") undoGrain();
+  }, [layer, undoGrain]);
+
+  const handleRedo = useCallback(() => {
+    if (layer === "talc") imageViewerRef.current?.redoTalc();
+    else if (layer === "type") redoGrain();
+  }, [layer, redoGrain]);
+
+  useEffect(() => {
+    if (result && result.mode !== "panorama" && layer === "type") {
+      setLayer("overview");
+    }
+  }, [result, layer]);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      // e.code — физическая клавиша (не зависит от раскладки, в отличие от
+      // e.key: на русской раскладке та же клавиша даёт "я", а не "z").
+      if (!(e.ctrlKey || e.metaKey) || e.code !== "KeyZ") return;
+      e.preventDefault();
+      if (e.shiftKey) handleRedo();
+      else handleUndo();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [handleUndo, handleRedo]);
 
   return (
     <AppShell
@@ -289,7 +475,7 @@ export default function App() {
                   value={layer}
                   onChange={(v) => setLayer(v as LayerMode)}
                   radius="xl"
-                  data={LAYER_OPTIONS}
+                  data={layerOptions}
                 />
                 <Badge variant="light" color="nornickel" size="lg" radius="sm">
                   {result.original_width}×{result.original_height}
@@ -310,8 +496,9 @@ export default function App() {
               )}
               {result?.image_url ? (
                 <ImageViewer
+                  ref={imageViewerRef}
                   imageUrl={result.image_url}
-                  talcDisplayUrl={result.talc_display_url}
+                  talcMaskUrl={result.talc_layer_url}
                   typeLayerUrl={result.type_layer_url}
                   grains={result.grains}
                   layer={layer}
@@ -320,6 +507,14 @@ export default function App() {
                   selectedId={selectedId}
                   onSelectGrain={setSelectedId}
                   onGrainBboxChange={handleGrainBboxChange}
+                  onGrainDragStart={pushGrainSnapshot}
+                  resultId={result.result_id}
+                  talcTool={layer === "talc" ? talcTool : null}
+                  talcBrushSize={talcBrushSize}
+                  onTalcDirtyChange={setTalcDirty}
+                  onTalcHistoryChange={handleTalcHistoryChange}
+                  onTalcSaved={handleTalcSaved}
+                  onTalcSaveError={handleTalcSaveError}
                 />
               ) : (
                 <Paper
@@ -360,13 +555,34 @@ export default function App() {
             {result && (
               <Stack gap="md" style={{ overflowY: "auto", maxHeight: "100%" }}>
                 <MetricsPanel result={result} />
-                <GrainEditor
-                  key={selectedGrain?.id ?? "none"}
-                  grain={selectedGrain}
-                  onBboxChange={handleGrainBboxChange}
-                  onSave={handleSaveGrain}
-                  saving={saving}
-                />
+                {layer === "type" && (
+                  <GrainEditor
+                    key={selectedGrain?.id ?? "none"}
+                    grain={selectedGrain}
+                    onBboxChange={handleGrainBboxChange}
+                    onSave={handleSaveGrain}
+                    saving={saving}
+                    canUndo={canUndo}
+                    canRedo={canRedo}
+                    onUndo={handleUndo}
+                    onRedo={handleRedo}
+                  />
+                )}
+                {layer === "talc" && (
+                  <TalcMaskEditor
+                    tool={talcTool}
+                    onToolChange={setTalcTool}
+                    brushSize={talcBrushSize}
+                    onBrushSizeChange={setTalcBrushSize}
+                    dirty={talcDirty}
+                    saving={talcSaving}
+                    onSave={handleSaveTalcMask}
+                    canUndo={canUndo}
+                    canRedo={canRedo}
+                    onUndo={handleUndo}
+                    onRedo={handleRedo}
+                  />
+                )}
               </Stack>
             )}
           </Box>

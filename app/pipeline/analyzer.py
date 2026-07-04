@@ -9,18 +9,20 @@ from typing import Any
 import numpy as np
 from numpy.typing import NDArray
 
+from app.config import PANORAMA_TILE_MARGIN, PANORAMA_TILE_SIZE
 from app.models.fixed_output_stub import (
     FixedOreClassifier,
     FixedPanoramaGrainDetector,
     FixedPanoramaTalcDetector,
 )
-from app.models.panorama_grain_detector import Grain
+from app.models.panorama_grain_detector import Grain, PanoramaGrainDetector
 from app.models.talc_segmenter import TalcSegmenter
 from app.pipeline.metrics import enrich_grain, grain_confidence
 from app.pipeline.mode_detector import detect_mode
-from app.pipeline.overlay import draw_grain_overlay, draw_talc_layer
+from app.pipeline.overlay import draw_grain_overlay
 from app.pipeline.report import format_conclusion
 from app.pipeline.rule_engine import RuleInput, apply_rules
+from app.pipeline.tiling import iter_tiles
 
 
 @dataclass
@@ -42,7 +44,6 @@ class AnalysisReport:
     classifier_match: str | None = None
     overlay_rgb: NDArray[np.uint8] | None = None
     talc_mask: NDArray[np.uint8] | None = None
-    overview_rgb: NDArray[np.uint8] | None = None
     processed_width: int = 0
     processed_height: int = 0
 
@@ -51,8 +52,12 @@ class Analyzer:
     """Точка входа pipeline. Три модели + talc detector для панорамы."""
 
     def __init__(self) -> None:
-        # STUB: зёрна/классификатор — fixed_output_stub; сегментатор — обученный Unet++.
+        # STUB: детальный режим/классификатор — fixed_output_stub (без обученной
+        # модели детекции зёрен под detail-снимки); сегментатор талька — Unet++.
         self.grain_detector = FixedPanoramaGrainDetector()
+        # Панорама: реальный детектор зёрен (порог яркости + connected components),
+        # гоняется по тайлам — см. _analyze_panorama.
+        self.panorama_grain_detector = PanoramaGrainDetector()
         self.talc_detector = FixedPanoramaTalcDetector()
         self.classifier = FixedOreClassifier()
         self.segmenter = TalcSegmenter()
@@ -82,9 +87,62 @@ class Analyzer:
     def _analyze_panorama(
         self, image_rgb: NDArray[np.uint8], mode: str, pw: int, ph: int
     ) -> AnalysisReport:
-        """Панорама: зёрна + тальк по тёмным областям."""
-        grains, sulfide_mask = self.grain_detector.detect(image_rgb)
-        talc_mask, talc_percent = self.talc_detector.predict(image_rgb, sulfide_mask)
+        """
+        Панорама режется на тайлы ≤PANORAMA_TILE_SIZE и обрабатывается поштучно:
+        цельная обработка гигантского снимка (одним проходом, с downscale под
+        модель) либо виснет, либо схлопывает тальк/зёрна до суб-пикселя и
+        ничего не находит. Каждый тайл берётся с контекстным полем
+        PANORAMA_TILE_MARGIN — без него модель на границе тайла не видит
+        соседних пикселей, и предсказания смежных тайлов расходятся на стыке
+        (видимые швы по сетке). В маски/список зёрен идёт только core тайла.
+        """
+        sulfide_mask = np.zeros((ph, pw), dtype=np.uint8)
+        talc_mask = np.zeros((ph, pw), dtype=np.uint8)
+        grains: list[Grain] = []
+
+        for tile in iter_tiles(image_rgb, PANORAMA_TILE_SIZE, margin=PANORAMA_TILE_MARGIN):
+            origin_x = tile.core_x - tile.offset_x
+            origin_y = tile.core_y - tile.offset_y
+
+            tile_grains, tile_sulfide = self.panorama_grain_detector.detect(tile.image)
+            core_sulfide = tile.crop_to_core(tile_sulfide)
+            sulfide_mask[
+                tile.core_y : tile.core_y + tile.core_h, tile.core_x : tile.core_x + tile.core_w
+            ] = core_sulfide
+
+            for g in tile_grains:
+                gx, gy, gw, gh = g.bbox
+                global_x, global_y = gx + origin_x, gy + origin_y
+                # Центр зерна должен лежать в core тайла — иначе оно попало
+                # только в margin и будет целиком найдено соседним тайлом,
+                # где эта же область — его core (без этого зёрна на стыке
+                # задваивались бы).
+                cx, cy = global_x + gw / 2, global_y + gh / 2
+                if not (
+                    tile.core_x <= cx < tile.core_x + tile.core_w
+                    and tile.core_y <= cy < tile.core_y + tile.core_h
+                ):
+                    continue
+                grains.append(
+                    Grain(
+                        grain_id=len(grains),
+                        bbox=(global_x, global_y, gw, gh),
+                        area=g.area,
+                        intergrowth_type=g.intergrowth_type,
+                        gray_ratio=g.gray_ratio,
+                    )
+                )
+
+            if self.segmenter.ready:
+                tile_talc = self.segmenter.predict(tile.image).talc_mask
+            else:
+                tile_talc, _ = self.talc_detector.predict(tile.image, tile_sulfide)
+            core_talc = tile.crop_to_core(tile_talc)
+            talc_mask[
+                tile.core_y : tile.core_y + tile.core_h, tile.core_x : tile.core_x + tile.core_w
+            ] = core_talc
+
+        talc_percent = 100.0 * float(np.count_nonzero(talc_mask)) / max(ph * pw, 1)
         metrics = self._metrics_from_grains(grains, ph * pw)
 
         rule = apply_rules(
@@ -96,6 +154,9 @@ class Analyzer:
             )
         )
 
+        # Используется только Streamlit-фронтендом (frontend/app.py) для
+        # предпросмотра overlay — при желании можно тоже перевести на тайлы,
+        # но там снимки не панорамного размера.
         overlay = draw_grain_overlay(image_rgb, grains, talc_mask=talc_mask)
         conclusion = format_conclusion(
             sort_label_ru=rule.sort_label_ru,
@@ -120,7 +181,6 @@ class Analyzer:
             grains=[self._grain_to_dict(g) for g in grains],
             overlay_rgb=overlay,
             talc_mask=talc_mask,
-            overview_rgb=image_rgb.copy(),
             processed_width=pw,
             processed_height=ph,
         )
@@ -135,7 +195,8 @@ class Analyzer:
 
         talc_mask = seg.talc_mask
         talc_percent = seg.talc_percent
-        if talc_percent <= 0:
+        if not self.segmenter.ready:
+            # Веса не загружены — используем заглушку, чтобы UI не падал.
             talc_mask, talc_percent = self.talc_detector.predict(image_rgb, sulfide_mask)
 
         metrics = self._metrics_from_grains(grains, ph * pw)
@@ -178,7 +239,6 @@ class Analyzer:
             classifier_match=clf.matched_reference,
             overlay_rgb=overlay,
             talc_mask=talc_mask,
-            overview_rgb=image_rgb.copy(),
             processed_width=pw,
             processed_height=ph,
         )
