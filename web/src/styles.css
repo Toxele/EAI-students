@@ -1,0 +1,139 @@
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: #f4f6fa;
+}
+
+.viewer-wrap {
+  position: relative;
+  height: 100%;
+  min-height: 0;
+  background: #1a1a1a;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid #dde3ec;
+}
+
+.viewer-osd {
+  width: 100%;
+  height: 100%;
+}
+
+/* SVG поверх OSD — внутри wrap, абсолютное позиционирование */
+.viewer-overlay-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+}
+
+.viewer-overlay-svg.is-active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.viewer-overlay-svg rect {
+  pointer-events: all;
+  cursor: pointer;
+  stroke-width: 2;
+}
+
+.viewer-overlay-svg rect.selected {
+  stroke-width: 3;
+  stroke-dasharray: 5 3;
+}
+
+.viewer-overlay-svg .grain-handle {
+  pointer-events: all;
+  fill: #fff;
+  stroke: #0077c8;
+  stroke-width: 2;
+  touch-action: none;
+}
+
+.viewer-overlay-svg .grain-handle:hover {
+  fill: #0077c8;
+}
+
+.viewer-badge {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.viewer-wrap .openseadragon-container .navigator,
+.viewer-wrap .openseadragon-container .openseadragon-controls {
+  display: none !important;
+}
+
+/* Nornickel-style section header: bold label + thin rule extending right */
+.nn-section-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.nn-section-title::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #d7dde6;
+}
+
+/* accent quote bar, used for the ore conclusion */
+.nn-quote-bar {
+  border-left: 3px solid #0077c8;
+  padding-left: 12px;
+}
+
+/* "лента" decorative element (Стандарт, стр. 26-30): непрерывная полоса
+   с приподнятым закруглённым сегментом */
+.nn-ribbon {
+  position: relative;
+  width: 100%;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.nn-ribbon::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4px;
+  background: #0077c8;
+}
+
+.nn-ribbon-bump {
+  position: absolute;
+  bottom: 0;
+  height: 14px;
+  border-radius: 7px 7px 0 0;
+  background: #0077c8;
+}
+
+.viewer-controls {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  z-index: 20;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  border: 1px solid #dee2e6;
+}

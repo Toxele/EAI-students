@@ -1,0 +1,83 @@
+{
+  "seed": 42,
+  "device": "auto",
+  "manifest_csv": "artifacts/manifests/nornikel_manifest.csv",
+  "run_dir": "notebooks/classifier_experiments/outputs/runs/resnet34_domain_aug",
+  "mlflow": {
+    "enabled": false,
+    "tracking_uri": "sqlite:///artifacts/mlflow.db",
+    "experiment": "nornikel_ore_classifier",
+    "run_name": "resnet34_domain_aug"
+  },
+  "include_sources": ["classification"],
+  "exclude_conflicts": true,
+  "exclude_duplicate_leaks": true,
+  "classes": ["ordinary", "thin", "talc"],
+  "data": {
+    "image_size": 384,
+    "batch_size": 8,
+    "num_workers": 0,
+    "use_weighted_sampler": true
+  },
+  "augmentation": {
+    "resize_mode": "random_resized_crop",
+    "crop_scale": [0.76, 1.0],
+    "crop_ratio": [0.86, 1.16],
+    "hflip_p": 0.5,
+    "vflip_p": 0.25,
+    "brightness": 0.22,
+    "contrast": 0.26,
+    "saturation": 0.22,
+    "hue": 0.025,
+    "gamma": 0.15,
+    "gray_domain_p": 0.45,
+    "gray_saturation_min": 0.04,
+    "gray_saturation_max": 0.42,
+    "gray_brightness_min": 0.40,
+    "gray_brightness_max": 0.98,
+    "gray_contrast_min": 0.55,
+    "gray_contrast_max": 1.18,
+    "gray_blue_gain_max": 1.18,
+    "gray_red_gain_min": 0.82,
+    "domain_strong_p": 0.30,
+    "domain_chroma_min": 0.04,
+    "domain_chroma_max": 0.78,
+    "clahe_p": 0.55,
+    "clahe_clip_min": 1.2,
+    "clahe_clip_max": 3.0,
+    "clahe_grid_sizes": [6, 8, 10, 12],
+    "red_gain_min": 0.82,
+    "red_gain_max": 1.12,
+    "green_gain_min": 0.88,
+    "green_gain_max": 1.12,
+    "blue_gain_min": 0.88,
+    "blue_gain_max": 1.20,
+    "blur_p": 0.12,
+    "blur_kernel_sizes": [3, 5],
+    "noise_p": 0.22,
+    "noise_sigma_min": 1.0,
+    "noise_sigma_max": 7.0,
+    "jpeg_p": 0.16,
+    "jpeg_quality_min": 58,
+    "jpeg_quality_max": 94
+  },
+  "model": {
+    "name": "resnet34",
+    "pretrained": true,
+    "fallback": "raise"
+  },
+  "loss": {
+    "label_smoothing": 0.06
+  },
+  "optimizer": {
+    "name": "adamw",
+    "lr": 0.0002,
+    "weight_decay": 0.00012
+  },
+  "trainer": {
+    "epochs": 14,
+    "amp": true,
+    "save_every": 1,
+    "early_stopping_patience": 5
+  }
+}

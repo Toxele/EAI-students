@@ -93,6 +93,14 @@ class TalcSegmentationDataset(Dataset):
             image = TF.adjust_gamma(image, random.uniform(1 - gamma, 1 + gamma))
         if random.random() < cfg.get("gray_domain_p", 0.0):
             image = self._apply_gray_domain_style(image, cfg)
+        if random.random() < cfg.get("domain_strong_p", 0.0):
+            image = self._apply_domain_strong_style(image, cfg)
+        if random.random() < cfg.get("blur_p", 0.0):
+            image = self._apply_blur(image, cfg)
+        if random.random() < cfg.get("noise_p", 0.0):
+            image = self._apply_sensor_noise(image, cfg)
+        if random.random() < cfg.get("jpeg_p", 0.0):
+            image = self._apply_jpeg_roundtrip(image, cfg)
         return image, mask
 
     @staticmethod
@@ -122,3 +130,77 @@ class TalcSegmentationDataset(Dataset):
         rgb[:, :, 2] *= random.uniform(1.0, cfg.get("gray_blue_gain_max", 1.12))
         rgb[:, :, 0] *= random.uniform(cfg.get("gray_red_gain_min", 0.88), 1.0)
         return Image.fromarray(np.clip(rgb, 0, 255).astype(np.uint8), mode="RGB")
+
+    @staticmethod
+    def _apply_domain_strong_style(image: Image.Image, cfg: dict[str, Any]) -> Image.Image:
+        rgb = np.asarray(image).astype(np.uint8)
+        lab = cv2.cvtColor(rgb, cv2.COLOR_RGB2LAB)
+        l_chan, a_chan, b_chan = cv2.split(lab)
+        if random.random() < cfg.get("clahe_p", 0.55):
+            clip = random.uniform(cfg.get("clahe_clip_min", 1.2), cfg.get("clahe_clip_max", 2.8))
+            grid = int(random.choice(cfg.get("clahe_grid_sizes", [6, 8, 10, 12])))
+            clahe = cv2.createCLAHE(clipLimit=clip, tileGridSize=(grid, grid))
+            l_chan = clahe.apply(l_chan)
+        l_chan = np.clip(l_chan.astype(np.float32) * random.uniform(0.65, 1.25) + random.uniform(-18, 18), 0, 255)
+        chroma_scale = random.uniform(cfg.get("domain_chroma_min", 0.05), cfg.get("domain_chroma_max", 0.75))
+        a_chan = 128.0 + (a_chan.astype(np.float32) - 128.0) * chroma_scale + random.uniform(-7, 7)
+        b_chan = 128.0 + (b_chan.astype(np.float32) - 128.0) * chroma_scale + random.uniform(-10, 8)
+        styled = cv2.merge(
+            [
+                np.clip(l_chan, 0, 255).astype(np.uint8),
+                np.clip(a_chan, 0, 255).astype(np.uint8),
+                np.clip(b_chan, 0, 255).astype(np.uint8),
+            ]
+        )
+        rgb = cv2.cvtColor(styled, cv2.COLOR_LAB2RGB).astype(np.float32)
+        if random.random() < cfg.get("vignette_p", 0.35):
+            rgb = TalcSegmentationDataset._apply_vignette(rgb, cfg)
+        gains = np.array(
+            [
+                random.uniform(cfg.get("red_gain_min", 0.82), cfg.get("red_gain_max", 1.12)),
+                random.uniform(cfg.get("green_gain_min", 0.88), cfg.get("green_gain_max", 1.12)),
+                random.uniform(cfg.get("blue_gain_min", 0.88), cfg.get("blue_gain_max", 1.20)),
+            ],
+            dtype=np.float32,
+        )
+        rgb *= gains.reshape(1, 1, 3)
+        return Image.fromarray(np.clip(rgb, 0, 255).astype(np.uint8), mode="RGB")
+
+    @staticmethod
+    def _apply_vignette(rgb: np.ndarray, cfg: dict[str, Any]) -> np.ndarray:
+        h, w = rgb.shape[:2]
+        y, x = np.ogrid[:h, :w]
+        cy = h * random.uniform(0.42, 0.58)
+        cx = w * random.uniform(0.42, 0.58)
+        dist = np.sqrt(((x - cx) / max(w, 1)) ** 2 + ((y - cy) / max(h, 1)) ** 2)
+        strength = random.uniform(cfg.get("vignette_strength_min", 0.08), cfg.get("vignette_strength_max", 0.35))
+        mask = 1.0 - strength * (dist / max(float(dist.max()), 1e-6)) ** 1.4
+        return rgb * mask[:, :, None]
+
+    @staticmethod
+    def _apply_blur(image: Image.Image, cfg: dict[str, Any]) -> Image.Image:
+        rgb = np.asarray(image)
+        if random.random() < 0.5:
+            ksize = int(random.choice(cfg.get("blur_kernel_sizes", [3, 5])))
+            blurred = cv2.GaussianBlur(rgb, (ksize, ksize), random.uniform(0.2, 1.1))
+        else:
+            blurred = cv2.medianBlur(rgb, int(random.choice(cfg.get("median_kernel_sizes", [3]))))
+        return Image.fromarray(blurred, mode="RGB")
+
+    @staticmethod
+    def _apply_sensor_noise(image: Image.Image, cfg: dict[str, Any]) -> Image.Image:
+        rgb = np.asarray(image).astype(np.float32)
+        sigma = random.uniform(cfg.get("noise_sigma_min", 1.5), cfg.get("noise_sigma_max", 8.0))
+        rgb += np.random.normal(0.0, sigma, size=rgb.shape).astype(np.float32)
+        if random.random() < cfg.get("speckle_p", 0.25):
+            rgb *= 1.0 + np.random.normal(0.0, random.uniform(0.01, 0.04), size=rgb.shape).astype(np.float32)
+        return Image.fromarray(np.clip(rgb, 0, 255).astype(np.uint8), mode="RGB")
+
+    @staticmethod
+    def _apply_jpeg_roundtrip(image: Image.Image, cfg: dict[str, Any]) -> Image.Image:
+        quality = int(random.uniform(cfg.get("jpeg_quality_min", 55), cfg.get("jpeg_quality_max", 92)))
+        ok, encoded = cv2.imencode(".jpg", cv2.cvtColor(np.asarray(image), cv2.COLOR_RGB2BGR), [cv2.IMWRITE_JPEG_QUALITY, quality])
+        if not ok:
+            return image
+        decoded = cv2.imdecode(encoded, cv2.IMREAD_COLOR)
+        return Image.fromarray(cv2.cvtColor(decoded, cv2.COLOR_BGR2RGB), mode="RGB")

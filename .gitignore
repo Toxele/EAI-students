@@ -1,4 +1,27 @@
+# ML pipeline
 kaggle_notebooks/
 artifacts/
 __pycache__/
 *.pyc
+.venv/
+venv/
+
+# Web app runtime
+uploads/
+results/
+
+# IDE / editor
+.idea/
+.cursor/
+
+# Frontend build
+web/node_modules/
+web/dist/
+
+# Raw dataset images (large, keep locally)
+/data/Панорамы/
+/data/Фото*/
+
+# Local backup files from merge
+*.local.bak
+*.app.bak

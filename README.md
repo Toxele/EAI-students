@@ -212,3 +212,19 @@ python -m scripts.train_classifier manifest_csv=artifacts/manifests/nornikel_man
 The classifier baseline intentionally excludes `label_conflict=true` rows by default. That is important because exact duplicate images appear under different class folders in the original dataset.
 
 Weak talc masks are not ground truth. They are derived from blue line drawings and should be treated as noisy pseudo-labels.
+
+## Ore Analyzer Web App
+
+Demo-приложение для анализа шлифов (FastAPI + React UI + Streamlit):
+
+- загрузка панорамы / близкого OM-фото;
+- слои: обзор, тальк, тип сraстаний;
+- правки bbox и пересчёт метрик;
+- экспорт PDF / CSV / JSON.
+
+Подробности: [docs/ORE_ANALYZER_APP.md](docs/ORE_ANALYZER_APP.md)
+
+```bash
+uvicorn app.main:app --reload --port 8000
+cd web && npm install && npm run dev
+```
