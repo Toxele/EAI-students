@@ -17,6 +17,7 @@ from app.api.routes import (
     get_overlay_path,
     get_pdf_bytes,
     get_talc_colored_path,
+    get_talc_confidence_path,
     get_talc_layer_path,
     get_type_layer_path,
 )
@@ -113,6 +114,14 @@ def get_talc_layer(result_id: str) -> FileResponse:
         raise HTTPException(status_code=404, detail="Слой талька не найден")
     media = "image/png" if path.suffix == ".png" else "image/jpeg"
     return FileResponse(path, media_type=media)
+
+
+@app.get("/result/{result_id}/layer/talc-confidence")
+def get_talc_confidence(result_id: str) -> FileResponse:
+    path = get_talc_confidence_path(result_id)
+    if path is None:
+        raise HTTPException(status_code=404, detail="Карта уверенности талька не найдена")
+    return FileResponse(path, media_type="image/png")
 
 
 @app.get("/result/{result_id}/layer/type")

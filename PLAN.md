@@ -124,7 +124,7 @@ else:
 
 
 
-На панораме без talc: сорт только по сraстаниям + флаг `talc_available=false`.
+На панораме без talc: сорт только по срастаниям + флаг `talc_available=false`.
 
 
 

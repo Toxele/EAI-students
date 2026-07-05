@@ -95,6 +95,7 @@ def recalculate_state(state: dict[str, Any]) -> dict[str, Any]:
         talc_available=talc_available,
         ordinary_percent=ordinary_pct,
         thin_percent=thin_pct,
+        mode=state.get("mode", "detail"),
     )
 
     state["grains"] = grains
@@ -151,3 +152,10 @@ def save_talc_layer_png(result_id: str, talc_mask: np.ndarray) -> str:
     path = RESULTS_DIR / f"{result_id}_talc.png"
     cv2.imwrite(str(path), talc_mask)
     return f"/result/{result_id}/layer/talc"
+
+
+def save_talc_confidence_png(result_id: str, talc_confidence: np.ndarray) -> str:
+    """Сохраняет карту уверенности талька (0..255) как PNG. Возвращает относительный URL."""
+    path = RESULTS_DIR / f"{result_id}_talc_confidence.png"
+    cv2.imwrite(str(path), talc_confidence)
+    return f"/result/{result_id}/layer/talc-confidence"

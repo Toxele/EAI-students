@@ -64,6 +64,7 @@ class AnalysisResponse(BaseModel):
     image_url: str | None = None
     talc_layer_url: str | None = None
     talc_display_url: str | None = None
+    talc_confidence_url: str | None = None
     type_layer_url: str | None = None
     labels_url: str | None = None
     csv_url: str | None = None

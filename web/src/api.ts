@@ -2,6 +2,15 @@ import type { AnalysisResult, Grain, GrainStatus } from "./types";
 
 const API = "";
 
+export async function checkHealth(): Promise<boolean> {
+  try {
+    const res = await fetch(`${API}/health`);
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 export async function analyzeFile(
   file: File,
   mode: "panorama" | "detail" | "auto"

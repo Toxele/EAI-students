@@ -20,6 +20,9 @@ class SegmentationResult:
     talc_percent: float
     sulfide_percent: float
     matrix_percent: float
+    # Карта уверенности модели (H×W, 0..255) — чем выше значение, тем
+    # увереннее модель в предсказании для этого пикселя.
+    talc_confidence: NDArray[np.uint8]
 
 
 class SegmentationStub:
@@ -35,4 +38,5 @@ class SegmentationStub:
             talc_percent=0.0,
             sulfide_percent=0.0,
             matrix_percent=100.0,
+            talc_confidence=empty_mask,
         )

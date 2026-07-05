@@ -2,8 +2,9 @@ import { useEffect, useRef, useCallback, useState, forwardRef, useImperativeHand
 import OpenSeadragon from "openseadragon";
 import { Badge, Paper, ActionIcon, Tooltip, Group, Text, Loader } from "@mantine/core";
 import { IconPlus, IconMinus, IconZoomScan } from "@tabler/icons-react";
-import type { AnalysisResult, Grain, LayerMode, TalcTool } from "../types";
+import type { AnalysisResult, Grain, LayerMode, TalcTool, TalcViewMode } from "../types";
 import { absUrl, applyTalcMask, grainColor } from "../api";
+import { CONFIDENCE_DISPLAY_ALPHA, confidenceByteToT, confidenceColor } from "../confidenceColormap";
 
 const MAX_SVG_GRAINS = 800;
 // Тальк редактируется на уменьшенном растре (иначе canvas 10000x10000 px
@@ -40,6 +41,7 @@ interface DragState {
 interface Props {
   imageUrl: string;
   talcMaskUrl: string | null;
+  talcConfidenceUrl: string | null;
   typeLayerUrl: string | null;
   grains: Grain[];
   layer: LayerMode;
@@ -52,6 +54,7 @@ interface Props {
   resultId: string;
   talcTool: TalcTool | null;
   talcBrushSize: number;
+  talcViewMode: TalcViewMode;
   onTalcDirtyChange?: (dirty: boolean) => void;
   onTalcHistoryChange?: (canUndo: boolean, canRedo: boolean) => void;
   onTalcSaved?: (updated: AnalysisResult) => void;
@@ -68,6 +71,7 @@ const ImageViewer = forwardRef<ImageViewerHandle, Props>(function ImageViewer(
   {
     imageUrl,
     talcMaskUrl,
+    talcConfidenceUrl,
     typeLayerUrl,
     grains,
     layer,
@@ -80,6 +84,7 @@ const ImageViewer = forwardRef<ImageViewerHandle, Props>(function ImageViewer(
     resultId,
     talcTool,
     talcBrushSize,
+    talcViewMode,
     onTalcDirtyChange,
     onTalcHistoryChange,
     onTalcSaved,
@@ -113,11 +118,17 @@ const ImageViewer = forwardRef<ImageViewerHandle, Props>(function ImageViewer(
   // --- Редактирование маски талька (карандаш/ластик/заливка) ---
   const talcScreenCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const talcOffscreenRef = useRef<HTMLCanvasElement | null>(null);
+  // Карта уверенности модели — не редактируется тулзами напрямую (кроме
+  // stampTalc/floodFillTalc, которые проставляют туда максимальную
+  // уверенность синхронно с правкой маски), используется только для
+  // отображения в режиме "Уверенность".
+  const talcConfidenceOffscreenRef = useRef<HTMLCanvasElement | null>(null);
   const talcReadyRef = useRef(false);
   const talcStrokeActiveRef = useRef(false);
   const talcLastPointRef = useRef<{ x: number; y: number } | null>(null);
   const talcToolRef = useRef(talcTool);
   const talcBrushSizeRef = useRef(talcBrushSize);
+  const talcViewModeRef = useRef(talcViewMode);
   const onTalcSavedRef = useRef(onTalcSaved);
   const onTalcSaveErrorRef = useRef(onTalcSaveError);
   const onTalcDirtyChangeRef = useRef(onTalcDirtyChange);
@@ -128,6 +139,7 @@ const ImageViewer = forwardRef<ImageViewerHandle, Props>(function ImageViewer(
   const [talcDirty, setTalcDirty] = useState(false);
   talcToolRef.current = talcTool;
   talcBrushSizeRef.current = talcBrushSize;
+  talcViewModeRef.current = talcViewMode;
   onTalcSavedRef.current = onTalcSaved;
   onTalcSaveErrorRef.current = onTalcSaveError;
   onTalcDirtyChangeRef.current = onTalcDirtyChange;
@@ -193,11 +205,28 @@ const ImageViewer = forwardRef<ImageViewerHandle, Props>(function ImageViewer(
     const viewport = viewer.viewport;
     const p1 = viewport.imageToViewerElementCoordinates(new OpenSeadragon.Point(0, 0));
     const p2 = viewport.imageToViewerElementCoordinates(new OpenSeadragon.Point(imageWidth, imageHeight));
+    const dw = p2.x - p1.x;
+    const dh = p2.y - p1.y;
+
+    const confOff = talcConfidenceOffscreenRef.current;
+    if (talcViewModeRef.current === "confidence" && confOff) {
+      // Силуэт маски (форма — что вообще тальк).
+      ctx.drawImage(off, p1.x, p1.y, dw, dh);
+      // confOff уже хранит цвет по шкале уверенности и постоянную альфу
+      // (см. confidenceColormap.ts) — source-in оставляет только пересечение
+      // с силуэтом маски, итоговая альфа = альфа маски × альфа confOff, цвет
+      // берётся из confOff. Показывается только внутри маски, цвет
+      // градуируется уверенностью.
+      ctx.globalCompositeOperation = "source-in";
+      ctx.drawImage(confOff, p1.x, p1.y, dw, dh);
+      ctx.globalCompositeOperation = "source-over";
+      return;
+    }
 
     // off хранит маску как непрозрачно-белую фигуру на прозрачном фоне —
     // перекрашиваем в полупрозрачный синий через source-atop (красит только
     // там, где уже есть alpha, форму не меняет).
-    ctx.drawImage(off, p1.x, p1.y, p2.x - p1.x, p2.y - p1.y);
+    ctx.drawImage(off, p1.x, p1.y, dw, dh);
     ctx.globalCompositeOperation = "source-atop";
     ctx.fillStyle = `rgba(${TALC_COLOR_RGB}, 0.55)`;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -516,9 +545,11 @@ const ImageViewer = forwardRef<ImageViewerHandle, Props>(function ImageViewer(
     };
   }, [imageUrl, typeLayerUrl, addAlignedImage, refresh]);
 
-  // Загрузка/инициализация редактируемого растра талька — при смене
-  // результата анализа (новый result_id => новый talcMaskUrl). Правки,
-  // сделанные на клиенте, не перезагружаются повторно с сервера.
+  // Загрузка/инициализация редактируемых растров талька (маска + карта
+  // уверенности) — при смене результата анализа (новый result_id => новые
+  // URL). Правки, сделанные на клиенте, не перезагружаются повторно с
+  // сервера. Готовность (talcReadyRef) выставляется только после того, как
+  // оба растра загружены (или их URL отсутствует).
   useEffect(() => {
     talcReadyRef.current = false;
     talcStrokeActiveRef.current = false;
@@ -538,60 +569,108 @@ const ImageViewer = forwardRef<ImageViewerHandle, Props>(function ImageViewer(
     off.height = workingH;
     talcOffscreenRef.current = off;
 
+    const confOff = document.createElement("canvas");
+    confOff.width = workingW;
+    confOff.height = workingH;
+    talcConfidenceOffscreenRef.current = confOff;
+
     let cancelled = false;
-    const finish = () => {
-      if (cancelled) return;
+    let maskDone = false;
+    let confDone = false;
+    const maybeFinish = () => {
+      if (cancelled || !maskDone || !confDone) return;
       talcReadyRef.current = true;
       setTalcLoading(false);
       drawTalcCanvas();
     };
 
     if (!talcMaskUrl) {
-      finish();
-      return () => {
-        cancelled = true;
+      maskDone = true;
+    } else {
+      setTalcLoading(true);
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        if (cancelled) return;
+        const tmp = document.createElement("canvas");
+        tmp.width = workingW;
+        tmp.height = workingH;
+        const tctx = tmp.getContext("2d");
+        if (tctx) {
+          // Без сглаживания: исходная маска бинарна (0/255), а бикубическое/
+          // билинейное масштабирование создаёт промежуточные alpha-значения
+          // на границах, из-за которых заливка после порога >127 могла
+          // оставлять тонкий незакрашенный "шов" на стыке соседних областей.
+          tctx.imageSmoothingEnabled = false;
+          tctx.drawImage(img, 0, 0, workingW, workingH);
+          const imgData = tctx.getImageData(0, 0, workingW, workingH);
+          const d = imgData.data;
+          for (let i = 0; i < d.length; i += 4) {
+            const on = d[i] > 127;
+            d[i] = 255;
+            d[i + 1] = 255;
+            d[i + 2] = 255;
+            d[i + 3] = on ? 255 : 0;
+          }
+          off.getContext("2d")?.putImageData(imgData, 0, 0);
+        }
+        maskDone = true;
+        maybeFinish();
       };
+      img.onerror = () => {
+        maskDone = true;
+        maybeFinish();
+      };
+      img.src = absUrl(talcMaskUrl);
     }
 
-    setTalcLoading(true);
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      if (cancelled) return;
-      const tmp = document.createElement("canvas");
-      tmp.width = workingW;
-      tmp.height = workingH;
-      const tctx = tmp.getContext("2d");
-      if (!tctx) {
-        finish();
-        return;
-      }
-      // Без сглаживания: исходная маска бинарна (0/255), а бикубическое/
-      // билинейное масштабирование создаёт промежуточные alpha-значения на
-      // границах, из-за которых заливка после порога >127 могла оставлять
-      // тонкий незакрашенный "шов" на стыке соседних областей.
-      tctx.imageSmoothingEnabled = false;
-      tctx.drawImage(img, 0, 0, workingW, workingH);
-      const imgData = tctx.getImageData(0, 0, workingW, workingH);
-      const d = imgData.data;
-      for (let i = 0; i < d.length; i += 4) {
-        const on = d[i] > 127;
-        d[i] = 255;
-        d[i + 1] = 255;
-        d[i + 2] = 255;
-        d[i + 3] = on ? 255 : 0;
-      }
-      const offCtx = off.getContext("2d");
-      offCtx?.putImageData(imgData, 0, 0);
-      finish();
-    };
-    img.onerror = () => finish();
-    img.src = absUrl(talcMaskUrl);
+    if (!talcConfidenceUrl) {
+      confDone = true;
+    } else {
+      const cimg = new Image();
+      cimg.crossOrigin = "anonymous";
+      cimg.onload = () => {
+        if (cancelled) return;
+        const tmp = document.createElement("canvas");
+        tmp.width = workingW;
+        tmp.height = workingH;
+        const tctx = tmp.getContext("2d");
+        if (tctx) {
+          tctx.imageSmoothingEnabled = false;
+          tctx.drawImage(cimg, 0, 0, workingW, workingH);
+          const imgData = tctx.getImageData(0, 0, workingW, workingH);
+          const d = imgData.data;
+          // Перекрашиваем байт уверенности (0..255) в цвет по шкале "холодный
+          // → горячий" (см. confidenceColormap.ts), альфа — постоянная
+          // (совпадает по плотности с обычной маской). Итоговый цвет/альфа
+          // видны только внутри силуэта маски — обрезка через source-in в
+          // drawTalcCanvas.
+          for (let i = 0; i < d.length; i += 4) {
+            const t = confidenceByteToT(d[i]);
+            const [r, g, b] = confidenceColor(t);
+            d[i] = r;
+            d[i + 1] = g;
+            d[i + 2] = b;
+            d[i + 3] = CONFIDENCE_DISPLAY_ALPHA;
+          }
+          confOff.getContext("2d")?.putImageData(imgData, 0, 0);
+        }
+        confDone = true;
+        maybeFinish();
+      };
+      cimg.onerror = () => {
+        confDone = true;
+        maybeFinish();
+      };
+      cimg.src = absUrl(talcConfidenceUrl);
+    }
+
+    maybeFinish();
 
     return () => {
       cancelled = true;
     };
-  }, [talcMaskUrl, imageWidth, imageHeight, drawTalcCanvas, notifyTalcHistory]);
+  }, [talcMaskUrl, talcConfidenceUrl, imageWidth, imageHeight, drawTalcCanvas, notifyTalcHistory]);
 
   useEffect(() => {
     refresh();
@@ -599,6 +678,10 @@ const ImageViewer = forwardRef<ImageViewerHandle, Props>(function ImageViewer(
     const t = window.setTimeout(refresh, 50);
     return () => window.clearTimeout(t);
   }, [layer, grains, selectedId, refresh]);
+
+  useEffect(() => {
+    drawTalcCanvas();
+  }, [talcViewMode, drawTalcCanvas]);
 
   const imageToMaskPoint = useCallback(
     (imgPt: { x: number; y: number }) => {
@@ -626,6 +709,25 @@ const ImageViewer = forwardRef<ImageViewerHandle, Props>(function ImageViewer(
     }
     ctx.fill();
     ctx.globalCompositeOperation = "source-over";
+
+    // Правки всегда максимальной уверенности — тот же штамп синхронно
+    // ставим на карту уверенности (пенсиль/заливка — цвет "горячего" конца
+    // шкалы при постоянной альфе, ластик убирает её вместе с маской).
+    const confCtx = talcConfidenceOffscreenRef.current?.getContext("2d");
+    if (confCtx) {
+      confCtx.beginPath();
+      confCtx.arc(x, y, radius, 0, Math.PI * 2);
+      if (tool === "eraser") {
+        confCtx.globalCompositeOperation = "destination-out";
+        confCtx.fillStyle = "rgba(0, 0, 0, 1)";
+      } else {
+        confCtx.globalCompositeOperation = "source-over";
+        const [r, g, b] = confidenceColor(1);
+        confCtx.fillStyle = `rgba(${r}, ${g}, ${b}, ${CONFIDENCE_DISPLAY_ALPHA / 255})`;
+      }
+      confCtx.fill();
+      confCtx.globalCompositeOperation = "source-over";
+    }
   }, []);
 
   const strokeTalc = useCallback(
@@ -659,6 +761,12 @@ const ImageViewer = forwardRef<ImageViewerHandle, Props>(function ImageViewer(
     const visited = new Uint8Array(w * h);
     const stack: number[] = [py * w + px];
 
+    // Правки всегда максимальной уверенности — заливка меняет ту же область
+    // синхронно и на карте уверенности (цвет "горячего" конца шкалы).
+    const confCtx = talcConfidenceOffscreenRef.current?.getContext("2d");
+    const confData = confCtx?.getImageData(0, 0, w, h);
+    const [maxR, maxG, maxB] = confidenceColor(1);
+
     // Заливка меняет связную область на противоположное состояние: клик по
     // пустой зоне закрашивает её тальком, клик по закрашенной — снимает.
     while (stack.length) {
@@ -671,6 +779,12 @@ const ImageViewer = forwardRef<ImageViewerHandle, Props>(function ImageViewer(
       data[idx + 1] = 255;
       data[idx + 2] = 255;
       data[idx + 3] = startOn ? 0 : 255;
+      if (confData) {
+        confData.data[idx] = maxR;
+        confData.data[idx + 1] = maxG;
+        confData.data[idx + 2] = maxB;
+        confData.data[idx + 3] = startOn ? 0 : CONFIDENCE_DISPLAY_ALPHA;
+      }
 
       // 8-связность (с диагоналями) — устойчивее к одно-пиксельным
       // диагональным разрывам на границе от сглаживания при загрузке маски.
@@ -691,6 +805,7 @@ const ImageViewer = forwardRef<ImageViewerHandle, Props>(function ImageViewer(
     }
 
     ctx.putImageData(imgData, 0, 0);
+    if (confCtx && confData) confCtx.putImageData(confData, 0, 0);
   }, []);
 
   const handleTalcPointerDown = useCallback(

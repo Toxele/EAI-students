@@ -9,13 +9,11 @@ from typing import Any
 import numpy as np
 from numpy.typing import NDArray
 
-from app.config import PANORAMA_TILE_MARGIN, PANORAMA_TILE_SIZE
-from app.models.fixed_output_stub import (
-    FixedOreClassifier,
-    FixedPanoramaGrainDetector,
-    FixedPanoramaTalcDetector,
-)
-from app.models.panorama_grain_detector import Grain, PanoramaGrainDetector
+from app.config import PANORAMA_TILE_MARGIN, PANORAMA_TILE_SIZE, TALC_PERCENT_THRESHOLD
+from app.models.fixed_output_stub import FixedPanoramaGrainDetector, FixedPanoramaTalcDetector
+from app.models.golden_ore_detector import GoldenOreDetector, GoldenOreInclusion
+from app.models.ore_inclusion_classifier import OreInclusionClassifier
+from app.models.panorama_grain_detector import Grain
 from app.models.talc_segmenter import TalcSegmenter
 from app.pipeline.metrics import enrich_grain, grain_confidence
 from app.pipeline.mode_detector import detect_mode
@@ -44,6 +42,7 @@ class AnalysisReport:
     classifier_match: str | None = None
     overlay_rgb: NDArray[np.uint8] | None = None
     talc_mask: NDArray[np.uint8] | None = None
+    talc_confidence: NDArray[np.uint8] | None = None
     processed_width: int = 0
     processed_height: int = 0
 
@@ -52,14 +51,17 @@ class Analyzer:
     """Точка входа pipeline. Три модели + talc detector для панорамы."""
 
     def __init__(self) -> None:
-        # STUB: детальный режим/классификатор — fixed_output_stub (без обученной
-        # модели детекции зёрен под detail-снимки); сегментатор талька — Unet++.
+        # STUB: детальный режим — фиксированные bbox зёрен (без обученной модели
+        # детекции сульфидов под detail-снимки); сегментатор талька — Unet++.
         self.grain_detector = FixedPanoramaGrainDetector()
-        # Панорама: реальный детектор зёрен (порог яркости + connected components),
-        # гоняется по тайлам — см. _analyze_panorama.
-        self.panorama_grain_detector = PanoramaGrainDetector()
+        # Панорама: алгоритмический детектор золоторудных вкраплений (HSV/LAB +
+        # KNN по цвету, см. app/models/golden_ore_detector.py), гоняется по
+        # тайлам — см. _analyze_panorama.
+        self.golden_ore_detector = GoldenOreDetector()
         self.talc_detector = FixedPanoramaTalcDetector()
-        self.classifier = FixedOreClassifier()
+        # Реальный coarse/fine классификатор (рядовое/тонкое срастание) —
+        # используется в обоих режимах, когда тальк <= порога оталькованности.
+        self.ore_classifier = OreInclusionClassifier()
         self.segmenter = TalcSegmenter()
 
     def analyze(
@@ -98,49 +100,61 @@ class Analyzer:
         """
         sulfide_mask = np.zeros((ph, pw), dtype=np.uint8)
         talc_mask = np.zeros((ph, pw), dtype=np.uint8)
+        talc_confidence = np.zeros((ph, pw), dtype=np.uint8)
         grains: list[Grain] = []
 
         for tile in iter_tiles(image_rgb, PANORAMA_TILE_SIZE, margin=PANORAMA_TILE_MARGIN):
             origin_x = tile.core_x - tile.offset_x
             origin_y = tile.core_y - tile.offset_y
 
-            tile_grains, tile_sulfide = self.panorama_grain_detector.detect(tile.image)
-            core_sulfide = tile.crop_to_core(tile_sulfide)
+            detection = self.golden_ore_detector.detect(tile.image)
+            core_sulfide = tile.crop_to_core(detection.mask)
             sulfide_mask[
                 tile.core_y : tile.core_y + tile.core_h, tile.core_x : tile.core_x + tile.core_w
             ] = core_sulfide
 
-            for g in tile_grains:
-                gx, gy, gw, gh = g.bbox
-                global_x, global_y = gx + origin_x, gy + origin_y
-                # Центр зерна должен лежать в core тайла — иначе оно попало
-                # только в margin и будет целиком найдено соседним тайлом,
-                # где эта же область — его core (без этого зёрна на стыке
-                # задваивались бы).
-                cx, cy = global_x + gw / 2, global_y + gh / 2
+            for inclusion in detection.inclusions:
+                ix, iy, iw, ih = inclusion.bbox
+                global_x, global_y = ix + origin_x, iy + origin_y
+                # Центр вкрапления должен лежать в core тайла — иначе оно
+                # попало только в margin и будет целиком найдено соседним
+                # тайлом, где эта же область — его core (без этого вкрапления
+                # на стыке задваивались бы).
+                cx, cy = global_x + iw / 2, global_y + ih / 2
                 if not (
                     tile.core_x <= cx < tile.core_x + tile.core_w
                     and tile.core_y <= cy < tile.core_y + tile.core_h
                 ):
                     continue
+                patch = image_rgb[global_y : global_y + ih, global_x : global_x + iw]
+                intergrowth_type, gray_ratio = self._classify_inclusion(patch, inclusion)
                 grains.append(
                     Grain(
                         grain_id=len(grains),
-                        bbox=(global_x, global_y, gw, gh),
-                        area=g.area,
-                        intergrowth_type=g.intergrowth_type,
-                        gray_ratio=g.gray_ratio,
+                        bbox=(global_x, global_y, iw, ih),
+                        area=inclusion.area,
+                        intergrowth_type=intergrowth_type,
+                        gray_ratio=gray_ratio,
                     )
                 )
 
             if self.segmenter.ready:
-                tile_talc = self.segmenter.predict(tile.image).talc_mask
+                seg_result = self.segmenter.predict(tile.image)
+                tile_talc = seg_result.talc_mask
+                tile_confidence = seg_result.talc_confidence
             else:
-                tile_talc, _ = self.talc_detector.predict(tile.image, tile_sulfide)
+                tile_talc, _ = self.talc_detector.predict(tile.image, detection.mask)
+                # Заглушка не оценивает уверенность — считаем её максимальной
+                # там, где заглушка вообще что-то нашла.
+                tile_confidence = tile_talc
             core_talc = tile.crop_to_core(tile_talc)
+            core_confidence = tile.crop_to_core(tile_confidence)
             talc_mask[
                 tile.core_y : tile.core_y + tile.core_h, tile.core_x : tile.core_x + tile.core_w
             ] = core_talc
+            talc_confidence[
+                tile.core_y : tile.core_y + tile.core_h, tile.core_x : tile.core_x + tile.core_w
+            ] = core_confidence
 
         talc_percent = 100.0 * float(np.count_nonzero(talc_mask)) / max(ph * pw, 1)
         metrics = self._metrics_from_grains(grains, ph * pw)
@@ -164,7 +178,15 @@ class Analyzer:
             talc_available=True,
             ordinary_percent=metrics["ordinary_percent"],
             thin_percent=metrics["thin_percent"],
+            mode=mode,
         )
+
+        classifier_match = None
+        if grains:
+            ordinary_n = sum(1 for g in grains if g.intergrowth_type == "ordinary")
+            thin_n = len(grains) - ordinary_n
+            source = "классификатор" if self.ore_classifier.ready else "эвристика (веса не загружены)"
+            classifier_match = f"{source} вкраплений: ordinary={ordinary_n}, thin={thin_n}"
 
         return AnalysisReport(
             mode=mode,
@@ -179,25 +201,56 @@ class Analyzer:
             thin_percent=metrics["thin_percent"],
             grain_count=len(grains),
             grains=[self._grain_to_dict(g) for g in grains],
+            classifier_match=classifier_match,
             overlay_rgb=overlay,
             talc_mask=talc_mask,
+            talc_confidence=talc_confidence,
             processed_width=pw,
             processed_height=ph,
         )
 
+    def _classify_inclusion(
+        self, patch_rgb: NDArray[np.uint8], inclusion: GoldenOreInclusion
+    ) -> tuple[str, float]:
+        """Классифицирует одно вкрапление как ordinary (рядовое) или thin (тонкое)."""
+        if self.ore_classifier.ready and patch_rgb.size:
+            result = self.ore_classifier.predict(patch_rgb)
+            gray_ratio = (1.0 - result.prob_ordinary) * 0.5
+            return result.intergrowth_type, gray_ratio
+
+        # Фолбэк без весов: компактные, почти не замещённые блобы (высокий
+        # fill_ratio) — рядовые; сильно фрагментированные — тонкие.
+        if inclusion.fill_ratio >= 0.5:
+            return "ordinary", 0.1
+        return "thin", 0.4
+
     def _analyze_detail(
         self, image_rgb: NDArray[np.uint8], mode: str, pw: int, ph: int
     ) -> AnalysisReport:
-        """Детальный OM: сегментатор + talc fallback + классификатор."""
+        """Детальный OM: сегментатор талька + coarse/fine классификатор."""
         seg = self.segmenter.predict(image_rgb)
-        clf = self.classifier.predict(image_rgb)
         grains, sulfide_mask = self.grain_detector.detect(image_rgb)
 
         talc_mask = seg.talc_mask
         talc_percent = seg.talc_percent
+        talc_confidence = seg.talc_confidence
         if not self.segmenter.ready:
             # Веса не загружены — используем заглушку, чтобы UI не падал.
             talc_mask, talc_percent = self.talc_detector.predict(image_rgb, sulfide_mask)
+            # Заглушка не оценивает уверенность — считаем её максимальной там,
+            # где заглушка вообще что-то нашла.
+            talc_confidence = talc_mask
+
+        # Тальк > порога — руда уже оталькованная, классификатор не нужен
+        # (см. app/pipeline/rule_engine.py). Иначе решаем рядовая/труднообогатимая
+        # реальным classifier — его вердикт применяется ко всем найденным зёрнам.
+        classifier_match = None
+        if talc_percent <= TALC_PERCENT_THRESHOLD and self.ore_classifier.ready:
+            result = self.ore_classifier.predict(image_rgb)
+            for grain in grains:
+                grain.intergrowth_type = result.intergrowth_type
+                grain.gray_ratio = (1.0 - result.prob_ordinary) * 0.5
+            classifier_match = f"классификатор: {result.intergrowth_type} (p_ordinary={result.prob_ordinary:.2f})"
 
         metrics = self._metrics_from_grains(grains, ph * pw)
 
@@ -217,11 +270,12 @@ class Analyzer:
             talc_available=True,
             ordinary_percent=metrics["ordinary_percent"],
             thin_percent=metrics["thin_percent"],
+            mode=mode,
         )
 
         explanation = rule.explanation
-        if clf.matched_reference:
-            explanation += f" Stub-классификатор: {clf.sort_label_ru} (~{clf.matched_reference})."
+        if classifier_match:
+            explanation += f" Реальный {classifier_match}."
 
         return AnalysisReport(
             mode=mode,
@@ -236,9 +290,10 @@ class Analyzer:
             thin_percent=metrics["thin_percent"],
             grain_count=len(grains),
             grains=[self._grain_to_dict(g) for g in grains],
-            classifier_match=clf.matched_reference,
+            classifier_match=classifier_match,
             overlay_rgb=overlay,
             talc_mask=talc_mask,
+            talc_confidence=talc_confidence,
             processed_width=pw,
             processed_height=ph,
         )

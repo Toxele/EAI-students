@@ -26,8 +26,8 @@ import {
   IconDownload,
   IconAlertCircle,
 } from "@tabler/icons-react";
-import type { AnalysisResult, Grain, GrainStatus, LayerMode, TalcTool } from "./types";
-import { analyzeFile, applyCorrections, absUrl } from "./api";
+import type { AnalysisResult, Grain, GrainStatus, LayerMode, TalcTool, TalcViewMode } from "./types";
+import { analyzeFile, applyCorrections, absUrl, checkHealth } from "./api";
 import ImageViewer, { type ImageViewerHandle } from "./components/ImageViewer";
 import MetricsPanel from "./components/MetricsPanel";
 import GrainEditor from "./components/GrainEditor";
@@ -80,10 +80,12 @@ export default function App() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<string>("auto");
+  const [backendReady, setBackendReady] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const imageViewerRef = useRef<ImageViewerHandle>(null);
 
   const [talcTool, setTalcTool] = useState<TalcTool>("cursor");
+  const [talcViewMode, setTalcViewMode] = useState<TalcViewMode>("mask");
   const [talcBrushSize, setTalcBrushSize] = useState(16);
   const [talcDirty, setTalcDirty] = useState(false);
   const [talcSaving, setTalcSaving] = useState(false);
@@ -104,12 +106,38 @@ export default function App() {
     ? LAYER_OPTIONS.filter((o) => o.value !== "type" || result.mode === "panorama")
     : LAYER_OPTIONS;
 
+  // Бэкенд грузит модели (torch/CUDA) синхронно при старте — до этого
+  // /health недоступен или отвечает не сразу. Пока не дождались первого
+  // успешного ответа, анализ недоступен — иначе запрос падает с "Ошибка
+  // анализа" ещё до того, как модели готовы.
+  useEffect(() => {
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const poll = async () => {
+      const ok = await checkHealth();
+      if (cancelled) return;
+      if (ok) {
+        setBackendReady(true);
+      } else {
+        timer = setTimeout(poll, 1500);
+      }
+    };
+    poll();
+
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, []);
+
   const handleFile = async (file: File | null) => {
-    if (!file) return;
+    if (!file || !backendReady) return;
     setLoading(true);
     setError(null);
     setSelectedId(null);
     setTalcDirty(false);
+    setTalcViewMode("mask");
     grainUndoStackRef.current = [];
     grainRedoStackRef.current = [];
     setGrainUndoAvailable(false);
@@ -384,9 +412,10 @@ export default function App() {
               color="nornickel.5"
               leftSection={<IconUpload size={16} />}
               onClick={() => fileRef.current?.click()}
-              loading={loading}
+              loading={loading || !backendReady}
+              disabled={!backendReady}
             >
-              Загрузить фото
+              {backendReady ? "Загрузить фото" : "Бэкенд загружается…"}
             </Button>
           </Group>
         </Group>
@@ -499,6 +528,7 @@ export default function App() {
                   ref={imageViewerRef}
                   imageUrl={result.image_url}
                   talcMaskUrl={result.talc_layer_url}
+                  talcConfidenceUrl={result.talc_confidence_url}
                   typeLayerUrl={result.type_layer_url}
                   grains={result.grains}
                   layer={layer}
@@ -511,6 +541,7 @@ export default function App() {
                   resultId={result.result_id}
                   talcTool={layer === "talc" ? talcTool : null}
                   talcBrushSize={talcBrushSize}
+                  talcViewMode={talcViewMode}
                   onTalcDirtyChange={setTalcDirty}
                   onTalcHistoryChange={handleTalcHistoryChange}
                   onTalcSaved={handleTalcSaved}
@@ -529,7 +560,17 @@ export default function App() {
                     background: "linear-gradient(135deg, #fff 0%, #eaf4fc 100%)",
                   }}
                 >
-                  {!loading && (
+                  {!loading && !backendReady && (
+                    <Stack align="center" gap="md" maw={420} ta="center" p="xl">
+                      <Loader color="nornickel" type="dots" />
+                      <Title order={3}>Загружаются модели анализа</Title>
+                      <Text c="dimmed" size="sm">
+                        Бэкенд запускает модели (сегментация талька, классификатор). Обычно это
+                        занимает несколько секунд — загрузка фото станет доступна автоматически.
+                      </Text>
+                    </Stack>
+                  )}
+                  {!loading && backendReady && (
                     <Stack align="center" gap="md" maw={420} ta="center" p="xl">
                       <ThemeIcon size={64} radius="xl" variant="light" color="nornickel">
                         <IconPhoto size={32} />
@@ -574,6 +615,9 @@ export default function App() {
                     onToolChange={setTalcTool}
                     brushSize={talcBrushSize}
                     onBrushSizeChange={setTalcBrushSize}
+                    viewMode={talcViewMode}
+                    onViewModeChange={setTalcViewMode}
+                    confidenceAvailable={!!result.talc_confidence_url}
                     dirty={talcDirty}
                     saving={talcSaving}
                     onSave={handleSaveTalcMask}

@@ -29,6 +29,7 @@ from app.pipeline.state import (
     load_state,
     recalculate_state,
     save_state,
+    save_talc_confidence_png,
     save_talc_layer_png,
     scale_grains_to_original,
 )
@@ -87,6 +88,7 @@ def _state_to_response(state: dict[str, Any]) -> dict[str, Any]:
         "image_url": f"/result/{rid}/image/original",
         "talc_layer_url": f"/result/{rid}/layer/talc",
         "talc_display_url": f"/result/{rid}/layer/talc-colored",
+        "talc_confidence_url": f"/result/{rid}/layer/talc-confidence",
         "type_layer_url": f"/result/{rid}/layer/type",
         "labels_url": f"/result/{rid}/labels.json",
         "csv_url": f"/result/{rid}/csv",
@@ -134,6 +136,9 @@ def analyze_upload(file_bytes: bytes, filename: str, mode_hint: str | None = Non
     if report.talc_mask is not None:
         talc_mask_orig = _upscale_mask(report.talc_mask, original_width, original_height)
         save_talc_layer_png(result_id, talc_mask_orig)
+    if report.talc_confidence is not None:
+        talc_confidence_orig = _upscale_mask(report.talc_confidence, original_width, original_height)
+        save_talc_confidence_png(result_id, talc_confidence_orig)
 
     # Слои для PDF и превью (на original размере)
     overview_bgr = bgr
@@ -281,6 +286,9 @@ def apply_talc_mask_edit(result_id: str, mask_png_bytes: bytes) -> CorrectionsRe
     orig_h = int(img.get("original_height") or mask.shape[0])
     mask_orig = _upscale_mask(mask, orig_w, orig_h)
     save_talc_layer_png(result_id, mask_orig)
+    # Ручная правка — модель тут ни при чём, уверенность максимальная везде,
+    # где пользователь оставил тальк.
+    save_talc_confidence_png(result_id, mask_orig)
 
     total_pixels = orig_w * orig_h
     talc_percent = round(100.0 * float(np.count_nonzero(mask_orig)) / total_pixels, 2) if total_pixels else 0.0
@@ -383,6 +391,11 @@ def get_talc_layer_path(result_id: str) -> Path | None:
         return png
     jpg = RESULTS_DIR / f"{result_id}_talc_layer.jpg"
     return jpg if jpg.is_file() else None
+
+
+def get_talc_confidence_path(result_id: str) -> Path | None:
+    png = RESULTS_DIR / f"{result_id}_talc_confidence.png"
+    return png if png.is_file() else None
 
 
 def _save_view_jpg(image_rgb: np.ndarray, path: Path, max_side: int = 4096) -> None:

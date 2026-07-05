@@ -18,7 +18,7 @@ ZOOM_LEVELS = [1, 2, 4, 8]
 # Сколько крупнейших зёрен показывать в selectbox (панорама может иметь 2000+)
 TOP_GRAINS_LIMIT = 200
 
-# Перевод типа сraстания для UI
+# Перевод типа срастания для UI
 INTERGROWTH_RU = {
     "ordinary": "рядовое",
     "thin": "тонкое",
@@ -97,7 +97,7 @@ def render_zoom_controls(image_rgb: NDArray[np.uint8], label: str) -> None:
 
 def render_grain_selector(grains: list[dict[str, Any]], total_count: int) -> None:
     """
-    Selectbox по id зерна + карточка с bbox, area, тип сraстания, gray_ratio.
+    Selectbox по id зерна + карточка с bbox, area, тип срастания, gray_ratio.
 
     Для панорам с большим числом blob — только top-N по площади.
     """
@@ -136,7 +136,7 @@ def render_grain_selector(grains: list[dict[str, Any]], total_count: int) -> Non
         st.metric("ID", selected["id"])
         st.metric("Площадь", f"{selected['area']} px")
     with col_b:
-        st.metric("Тип сraстания", ig_ru)
+        st.metric("Тип срастания", ig_ru)
         st.metric("gray_ratio", f"{selected['gray_ratio']:.3f}")
 
     st.text(f"bbox (x, y, w, h): ({x}, {y}, {w}, {h})")

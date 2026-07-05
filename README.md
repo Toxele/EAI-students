@@ -194,7 +194,7 @@ Weak talc masks are not ground truth. They are derived from blue line drawings a
 Demo-приложение для анализа шлифов (FastAPI + React UI + Streamlit):
 
 - загрузка панорамы / близкого OM-фото;
-- слои: обзор, тальк, тип сraстаний;
+- слои: обзор, тальк, тип срастаний;
 - правки bbox и пересчёт метрик;
 - экспорт PDF / CSV / JSON.
 

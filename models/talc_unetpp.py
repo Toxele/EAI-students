@@ -84,12 +84,13 @@ def predict_talc_mask(
     img_size: tuple[int, int] = (576, 768),
     device=None,
     threshold: float = 0.5,
-) -> tuple[NDArray[np.uint8], float]:
+) -> tuple[NDArray[np.uint8], float, NDArray[np.uint8]]:
     """
     Предсказание маски талька на полном разрешении.
 
     :param img_size: (H, W) как при обучении
-    :return: бинарная маска H×W (0/255), доля талька %
+    :return: бинарная маска H×W (0/255), доля талька %, карта уверенности
+        H×W (0..255 — sigmoid-вероятность талька, чем выше тем увереннее)
     """
     if torch is None:
         raise ImportError("torch не установлен")
@@ -104,4 +105,7 @@ def predict_talc_mask(
     mask_small = (prob > threshold).astype(np.uint8) * 255
     mask_full = cv2.resize(mask_small, (full_w, full_h), interpolation=cv2.INTER_NEAREST)
     talc_percent = 100.0 * np.count_nonzero(mask_full) / max(full_h * full_w, 1)
-    return mask_full, round(talc_percent, 2)
+
+    confidence_small = (prob * 255.0).astype(np.uint8)
+    confidence_full = cv2.resize(confidence_small, (full_w, full_h), interpolation=cv2.INTER_LINEAR)
+    return mask_full, round(talc_percent, 2), confidence_full

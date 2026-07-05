@@ -78,49 +78,50 @@ export default function MetricsPanel({ result }: Props) {
         )}
       </Paper>
 
-      <Paper p="md" radius="xl" shadow="xs" withBorder>
-        <Title order={5} tt="uppercase" fz="sm" mb="sm" className="nn-section-title">
-          Срастания: Всего / Рядовые / Тонкие
-        </Title>
-        <SimpleGrid cols={3} mb="sm">
-          <Paper p="xs" radius="sm" bg="gray.0" ta="center">
-            <Text size="xs" c="dimmed">
-              Всего
-            </Text>
-            <Text fw={700} size="lg">
-              {counts.total_k}
-            </Text>
-          </Paper>
-          <Paper p="xs" radius="sm" bg="green.0" ta="center">
-            <Text size="xs" c="dimmed">
-              Рядовые
-            </Text>
-            <Text fw={700} size="lg" c="green.8">
-              {counts.ordinary_l}
-            </Text>
-          </Paper>
-          <Paper p="xs" radius="sm" bg="red.0" ta="center">
-            <Text size="xs" c="dimmed">
-              Тонкие
-            </Text>
-            <Text fw={700} size="lg" c="red.8">
-              {counts.thin_j}
-            </Text>
-          </Paper>
-        </SimpleGrid>
-        <Stack gap="sm">
-          {counts.uncertain > 0 && (
-            <MetricRow label="неопределённых" value={counts.uncertain} />
-          )}
-          {counts.false_positive > 0 && (
-            <MetricRow label="ложных" value={counts.false_positive} />
-          )}
-          <Divider my={4} />
-          <PercentBar label="Всего %" value={metrics.sulfide_percent} color="gray" />
-          <PercentBar label="Рядовые %" value={metrics.ordinary_percent} color="green" />
-          <PercentBar label="Тонкие %" value={metrics.thin_percent} color="red" />
-        </Stack>
-      </Paper>
+      {result.mode !== "detail" && (
+        <Paper p="md" radius="xl" shadow="xs" withBorder>
+          <Title order={5} tt="uppercase" fz="sm" mb="sm" className="nn-section-title">
+            Срастания
+          </Title>
+          <SimpleGrid cols={3} mb="sm">
+            <Paper p="xs" radius="sm" bg="gray.0" ta="center">
+              <Text size="xs" c="dimmed">
+                Всего
+              </Text>
+              <Text fw={700} size="lg">
+                {counts.total_k}
+              </Text>
+            </Paper>
+            <Paper p="xs" radius="sm" bg="green.0" ta="center">
+              <Text size="xs" c="dimmed">
+                Рядовые
+              </Text>
+              <Text fw={700} size="lg" c="green.8">
+                {counts.ordinary_l}
+              </Text>
+            </Paper>
+            <Paper p="xs" radius="sm" bg="red.0" ta="center">
+              <Text size="xs" c="dimmed">
+                Тонкие
+              </Text>
+              <Text fw={700} size="lg" c="red.8">
+                {counts.thin_j}
+              </Text>
+            </Paper>
+          </SimpleGrid>
+          <Stack gap="sm">
+            {counts.uncertain > 0 && (
+              <MetricRow label="неопределённых" value={counts.uncertain} />
+            )}
+            {counts.false_positive > 0 && (
+              <MetricRow label="ложных" value={counts.false_positive} />
+            )}
+            <Divider my={4} />
+            <PercentBar label="Рядовые %" value={metrics.ordinary_percent} color="green" />
+            <PercentBar label="Тонкие %" value={metrics.thin_percent} color="red" />
+          </Stack>
+        </Paper>
+      )}
     </Stack>
   );
 }

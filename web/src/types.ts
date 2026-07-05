@@ -51,6 +51,7 @@ export interface AnalysisResult {
   image_url: string | null;
   talc_layer_url: string | null;
   talc_display_url: string | null;
+  talc_confidence_url: string | null;
   type_layer_url: string | null;
   labels_url: string | null;
   pdf_url: string | null;
@@ -62,3 +63,5 @@ export interface AnalysisResult {
 export type LayerMode = "overview" | "talc" | "type";
 
 export type TalcTool = "cursor" | "pencil" | "eraser" | "fill";
+
+export type TalcViewMode = "mask" | "confidence";

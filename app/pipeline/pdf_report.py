@@ -104,8 +104,8 @@ def build_pdf_bytes(
     table_rows = [
         ("Показатель", "Значение"),
         ("Сульфиды", f"{metrics.sulfide_percent:.2f}%"),
-        ("Рядовые сraстания", f"{metrics.ordinary_percent:.2f}%"),
-        ("Тонкие сraстания", f"{metrics.thin_percent:.2f}%"),
+        ("Рядовые срастания", f"{metrics.ordinary_percent:.2f}%"),
+        ("Тонкие срастания", f"{metrics.thin_percent:.2f}%"),
         ("Тальк", talc_str),
         ("k — вкр. всего", k_str),
         ("l — рядовых", l_str),
@@ -131,7 +131,7 @@ def build_pdf_bytes(
     layers = [
         ("Обзор", overview_rgb if overview_rgb is not None else overlay_rgb),
         ("Тальк", talc_layer_rgb),
-        ("Тип сraстаний", type_layer_rgb),
+        ("Тип срастаний", type_layer_rgb),
     ]
     for title, layer_rgb in layers:
         if layer_rgb is None:

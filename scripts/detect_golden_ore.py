@@ -37,6 +37,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--component-close-size", type=int, default=3)
     parser.add_argument("--no-merge", action="store_true", help="Disable merging intersecting boxes.")
     parser.add_argument("--box-merge-gap", type=int, default=0)
+    parser.add_argument("--min-box-side", type=int, default=100, help="Reject boxes with both sides <= this.")
     return parser.parse_args(_normalize_dash_prefixed_values(sys.argv[1:]))
 
 
@@ -66,6 +67,7 @@ def main() -> None:
         component_close_size=args.component_close_size,
         merge_intersecting_boxes=not args.no_merge,
         box_merge_gap=args.box_merge_gap,
+        min_box_side=args.min_box_side,
     )
 
     if args.names:

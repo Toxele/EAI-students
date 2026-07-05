@@ -65,11 +65,12 @@ class TalcSegmenter:
                 talc_percent=0.0,
                 sulfide_percent=0.0,
                 matrix_percent=100.0,
+                talc_confidence=empty,
             )
 
         from models.talc_unetpp import predict_talc_mask
 
-        talc_mask, talc_percent = predict_talc_mask(
+        talc_mask, talc_percent, talc_confidence = predict_talc_mask(
             self._model,
             image_rgb,
             img_size=self._img_size,
@@ -87,4 +88,5 @@ class TalcSegmenter:
             talc_percent=talc_percent,
             sulfide_percent=0.0,
             matrix_percent=max(0.0, 100.0 - talc_percent),
+            talc_confidence=talc_confidence,
         )

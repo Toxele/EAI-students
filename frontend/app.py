@@ -156,7 +156,7 @@ with col2:
 
         st.image(report.overlay_rgb, use_container_width=True)
 
-    st.caption("🟢 рядовое сraстание | 🔴 тонкое | 🔵 тальк (если доступен)")
+    st.caption("🟢 рядовое срастание | 🔴 тонкое | 🔵 тальк (если доступен)")
 
 
 
@@ -214,7 +214,7 @@ st.caption(f"Порог оталькованности: {TALC_PERCENT_THRESHOLD:
 
 if report.classifier_match:
 
-    st.text(f"Stub-классификатор: ближайший эталон — {report.classifier_match}")
+    st.text(report.classifier_match)
 
 
 

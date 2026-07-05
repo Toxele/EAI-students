@@ -45,12 +45,12 @@ def apply_rules(data: RuleInput) -> RuleOutput:
             sort_label_ru="оталькованная",
             explanation=(
                 f"Содержание талька {data.talc_percent:.1f}% (>{TALC_PERCENT_THRESHOLD:.0f}%). "
-                f"Рядовые сraстания {data.ordinary_percent:.1f}%, "
+                f"Рядовые срастания {data.ordinary_percent:.1f}%, "
                 f"тонкие {data.thin_percent:.1f}%."
             ),
         )
 
-    # Без талька или talc <= 10% — смотрим сraстания
+    # Без талька или talc <= 10% — смотрим срастания
     if data.ordinary_percent >= data.thin_percent:
         extra = ""
         if not data.talc_available:
@@ -59,7 +59,7 @@ def apply_rules(data: RuleInput) -> RuleOutput:
             sort_code="ryadovaya",
             sort_label_ru="рядовая",
             explanation=(
-                f"Преобладают обычные сraстания ({data.ordinary_percent:.1f}% vs "
+                f"Преобладают обычные срастания ({data.ordinary_percent:.1f}% vs "
                 f"тонкие {data.thin_percent:.1f}%).{extra}"
             ),
         )
@@ -71,7 +71,7 @@ def apply_rules(data: RuleInput) -> RuleOutput:
         sort_code="trudnoobogatimaya",
         sort_label_ru="труднообогатимая",
         explanation=(
-            f"Преобладают тонкие сraстания ({data.thin_percent:.1f}% vs "
+            f"Преобладают тонкие срастания ({data.thin_percent:.1f}% vs "
             f"рядовые {data.ordinary_percent:.1f}%).{extra}"
         ),
     )

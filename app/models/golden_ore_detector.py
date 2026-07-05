@@ -64,6 +64,7 @@ class GoldenOreDetector:
         component_close_size: int = 3,
         merge_intersecting_boxes: bool = True,
         box_merge_gap: int = 0,
+        min_box_side: int = 100,
     ) -> None:
         """Store color and component filters for the detector."""
         self.hue_min = hue_min
@@ -84,6 +85,9 @@ class GoldenOreDetector:
         self.component_close_size = component_close_size
         self.merge_intersecting_boxes = merge_intersecting_boxes
         self.box_merge_gap = box_merge_gap
+        # Отбрасываем вкрапления, у которых обе стороны bbox не больше этого
+        # порога — слишком мелкие кандидаты для устойчивой классификации.
+        self.min_box_side = min_box_side
 
     def detect(self, image_rgb: NDArray[np.uint8]) -> GoldenOreDetectionResult:
         """Detect ore inclusions and return components, binary mask, and overlay."""
@@ -176,6 +180,8 @@ class GoldenOreDetector:
             area = int(gold_pixels.sum())
 
             if area < min_area or area > max_area:
+                continue
+            if max(box_width, box_height) <= self.min_box_side:
                 continue
 
             aspect_ratio = box_width / max(box_height, 1)

@@ -10,8 +10,8 @@ from numpy.typing import NDArray
 from app.models.panorama_grain_detector import Grain
 
 # Цвета overlay в RGB (для легенды UI)
-COLOR_ORDINARY_RGB = (0, 200, 0)   # зелёный — рядовое сraстание
-COLOR_THIN_RGB = (220, 40, 40)     # красный — тонкое сraстание
+COLOR_ORDINARY_RGB = (0, 200, 0)   # зелёный — рядовое срастание
+COLOR_THIN_RGB = (220, 40, 40)     # красный — тонкое срастание
 COLOR_TALC_RGB = (40, 120, 255)    # синий — тальк
 
 

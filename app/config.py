@@ -48,8 +48,18 @@ BRIGHT_PERCENTILE = 88
 # Минимальная площадь blob в пикселях (отсечь шум)
 MIN_BLOB_AREA = 30
 
-# Unet++ fast_768 — сегментация талька (Kaggle).
-# Веса не хранятся в git (см. models/weights/.gitignore) — лежат рядом с репозиторием
-# в папке models_weights/. Путь можно переопределить переменной окружения.
-_DEFAULT_TALC_WEIGHTS = PROJECT_ROOT.parent / "models_weights" / "segmentator.pt"
+# Папка с весами моделей — не хранится в git (см. .gitignore: models/weights/*.pt).
+# Разово подкачивается скриптом scripts/download_weights.py.
+WEIGHTS_DIR = PROJECT_ROOT / "models" / "weights"
+
+# Unet++ fast_768 — сегментация талька (Kaggle). Путь можно переопределить
+# переменной окружения.
+_DEFAULT_TALC_WEIGHTS = WEIGHTS_DIR / "segmentator.pt"
 TALC_SEGMENTER_WEIGHTS = Path(os.environ.get("TALC_SEGMENTER_WEIGHTS", _DEFAULT_TALC_WEIGHTS))
+
+# Coarse/fine (рядовая/труднообогатимая) бинарный классификатор — ResNet34
+# (scripts/train_coarse_fine.py, kaggle/train_coarse_fine_binary.ipynb).
+_DEFAULT_ORE_CLASSIFIER_WEIGHTS = WEIGHTS_DIR / "classifier.pt"
+ORE_CLASSIFIER_WEIGHTS = Path(
+    os.environ.get("ORE_CLASSIFIER_WEIGHTS", _DEFAULT_ORE_CLASSIFIER_WEIGHTS)
+)
