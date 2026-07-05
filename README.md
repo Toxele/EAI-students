@@ -1,4 +1,4 @@
-# Head (disguise from another participant)
+# AI analysis of ore thin sections
 
 AI pipeline that analyzes microphotographs of polished ore sections and
 classifies each sample by expert rule (not a black-box classifier). It
