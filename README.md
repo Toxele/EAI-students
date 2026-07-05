@@ -27,8 +27,7 @@ training/       Model training / research pipeline (see training/README.md)
 ```
 
 Request flow: upload → `mode_detector` (panorama vs. detail) → grain/talc
-detection → rule engine → metrics + overlay + PDF/CSV report. See
-[AGENTS.md](AGENTS.md) for the detailed pipeline breakdown.
+detection → rule engine → metrics + overlay + PDF/CSV report.
 
 ## Requirements
 
