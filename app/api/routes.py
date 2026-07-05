@@ -1,4 +1,4 @@
-"""HTTP routes FastAPI — загрузка, анализ, сохранение результатов."""
+"""FastAPI HTTP routes — upload, analysis, saving results."""
 
 from __future__ import annotations
 
@@ -51,7 +51,7 @@ def _upscale_mask(mask: np.ndarray, width: int, height: int) -> np.ndarray:
 
 
 def _state_to_response(state: dict[str, Any]) -> dict[str, Any]:
-    """Общие поля для AnalysisResponse / CorrectionsResponse."""
+    """Fields shared by AnalysisResponse / CorrectionsResponse."""
     rid = state["result_id"]
     m = state["metrics"]
     counts = state["counts"]
@@ -111,10 +111,10 @@ def analyze_upload(file_bytes: bytes, filename: str, mode_hint: str | None = Non
     upload_path = UPLOAD_DIR / f"{result_id}_{_safe_filename(filename)}"
     upload_path.write_bytes(file_bytes)
 
-    # Панораму анализируем в исходном разрешении — Analyzer режет её на тайлы
-    # сам (см. _analyze_panorama). Глобальный downscale здесь схлопнул бы
-    # тальк/зёрна до суб-пикселя ещё до тайлинга. Detail-снимки уже
-    # компактные — downscale безопасен и экономит память.
+    # Panoramas are analyzed at full resolution — the Analyzer tiles them
+    # itself (see _analyze_panorama). A global downscale here would collapse
+    # talc/grains to sub-pixel size before tiling even happens. Detail shots
+    # are already compact — downscaling is safe and saves memory.
     if mode == "panorama":
         image_rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
     else:
@@ -140,7 +140,7 @@ def analyze_upload(file_bytes: bytes, filename: str, mode_hint: str | None = Non
         talc_confidence_orig = _upscale_mask(report.talc_confidence, original_width, original_height)
         save_talc_confidence_png(result_id, talc_confidence_orig)
 
-    # Слои для PDF и превью (на original размере)
+    # Layers for the PDF and previews (at original size)
     overview_bgr = bgr
     talc_layer_rgb = None
     type_layer_rgb = None
@@ -153,14 +153,13 @@ def analyze_upload(file_bytes: bytes, filename: str, mode_hint: str | None = Non
         _save_view_jpg(talc_layer_rgb, RESULTS_DIR / f"{result_id}_talc_view.jpg")
         _save_view_jpg(type_layer_rgb, RESULTS_DIR / f"{result_id}_type_view.jpg")
 
-    if report.overlay_rgb is not None:
-        overlay_orig = draw_type_layer(
-            cv2.cvtColor(overview_bgr, cv2.COLOR_BGR2RGB),
-            grains_orig,
-        )
-        if talc_mask_orig is not None:
-            overlay_orig = draw_talc_layer(overlay_orig, talc_mask_orig, alpha=0.35)
-        save_overlay(overlay_orig, str(RESULTS_DIR / f"{result_id}_overlay.jpg"))
+    overlay_orig = draw_type_layer(
+        cv2.cvtColor(overview_bgr, cv2.COLOR_BGR2RGB),
+        grains_orig,
+    )
+    if talc_mask_orig is not None:
+        overlay_orig = draw_talc_layer(overlay_orig, talc_mask_orig, alpha=0.35)
+    save_overlay(overlay_orig, str(RESULTS_DIR / f"{result_id}_overlay.jpg"))
 
     state: dict[str, Any] = {
         "result_id": result_id,
@@ -218,11 +217,11 @@ def _scaled_bbox_for_view(bbox: list[int], scale_x: float, scale_y: float) -> li
 
 def _refresh_type_view(state: dict[str, Any]) -> None:
     """
-    Быстрая перерисовка превью (interactive-путь).
+    Fast preview redraw (interactive path).
 
-    Рисует bbox на закэшированном downscaled overview вместо полноразмерного
-    оригинала — иначе правка одного зерна на панораме 10000x10000 занимает
-    секунды на decode/redraw/encode.
+    Draws bboxes on the cached downscaled overview instead of the full-res
+    original — otherwise editing a single grain on a 10000x10000 panorama
+    would take seconds for decode/redraw/encode.
     """
     result_id = state["result_id"]
     view_path = RESULTS_DIR / f"{result_id}_overview_view.jpg"
@@ -250,8 +249,8 @@ def _refresh_type_view(state: dict[str, Any]) -> None:
 
 def _refresh_talc_view(state: dict[str, Any], mask_orig: np.ndarray) -> None:
     """
-    Быстрая перерисовка превью талька (тот же приём, что и _refresh_type_view):
-    рисует на закэшированном downscaled overview вместо полноразмерного оригинала.
+    Fast talc preview redraw (same trick as _refresh_type_view):
+    draws on the cached downscaled overview instead of the full-res original.
     """
     result_id = state["result_id"]
     view_path = RESULTS_DIR / f"{result_id}_overview_view.jpg"
@@ -269,8 +268,8 @@ def _refresh_talc_view(state: dict[str, Any], mask_orig: np.ndarray) -> None:
 
 def apply_talc_mask_edit(result_id: str, mask_png_bytes: bytes) -> CorrectionsResponse | None:
     """
-    Сохраняет маску талька, отредактированную вручную (карандаш/ластик/заливка),
-    и пересчитывает метрики/сорт руды.
+    Saves a manually edited talc mask (pencil/eraser/fill)
+    and recalculates the metrics/ore sort.
     """
     state = load_state(result_id)
     if state is None:
@@ -286,8 +285,8 @@ def apply_talc_mask_edit(result_id: str, mask_png_bytes: bytes) -> CorrectionsRe
     orig_h = int(img.get("original_height") or mask.shape[0])
     mask_orig = _upscale_mask(mask, orig_w, orig_h)
     save_talc_layer_png(result_id, mask_orig)
-    # Ручная правка — модель тут ни при чём, уверенность максимальная везде,
-    # где пользователь оставил тальк.
+    # Manual edit — the model has nothing to do with it, confidence is
+    # maximal everywhere the user left talc.
     save_talc_confidence_png(result_id, mask_orig)
 
     total_pixels = orig_w * orig_h
@@ -321,9 +320,9 @@ def apply_grain_corrections(result_id: str, updates: list[dict[str, Any]]) -> Co
     save_state(state)
     _refresh_type_view(state)
 
-    # Полноразмерные слои (для PDF/`/overlay`) перерисовываются лениво, при
-    # запросе экспорта — не здесь, чтобы кнопка "Сохранить" не ждала обработку
-    # оригинала в полном разрешении.
+    # Full-size layers (for the PDF/`/overlay`) are redrawn lazily, on
+    # export request — not here, so the "Save" button doesn't wait for
+    # full-resolution processing of the original.
 
     labels_path = RESULTS_DIR / f"{result_id}_labels.json"
     labels_path.write_text(
@@ -354,8 +353,8 @@ def _load_original_rgb(state: dict[str, Any]) -> np.ndarray | None:
 
 def get_overlay_path(result_id: str) -> Path | None:
     """
-    Полноразмерный overlay (тип + тальк) — рендерится по требованию из
-    актуального state, а не на каждой правке зерна (см. apply_grain_corrections).
+    Full-size overlay (type + talc) — rendered on demand from the current
+    state, not on every grain edit (see apply_grain_corrections).
     """
     path = RESULTS_DIR / f"{result_id}_overlay.jpg"
     state = load_state(result_id)
@@ -399,7 +398,7 @@ def get_talc_confidence_path(result_id: str) -> Path | None:
 
 
 def _save_view_jpg(image_rgb: np.ndarray, path: Path, max_side: int = 4096) -> None:
-    """Сохраняет JPEG для web-viewer (downscale если огромный)."""
+    """Saves a JPEG for the web viewer (downscaled if huge)."""
     h, w = image_rgb.shape[:2]
     out = image_rgb
     if max(h, w) > max_side:
@@ -467,13 +466,13 @@ def get_pdf_bytes(result_id: str) -> bytes | None:
         return cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB) if bgr is not None else None
 
     overview_rgb = _load_original_rgb(state)
-    # type_layer.jpg на диске — снимок на момент анализа; тип-слой рисуем
-    # заново, чтобы PDF отражал правки зёрен, внесённые после анализа.
+    # type_layer.jpg on disk is a snapshot from analysis time; we redraw the
+    # type layer so the PDF reflects grain edits made after analysis.
     type_layer_rgb = draw_type_layer(overview_rgb, state["grains"]) if overview_rgb is not None else None
 
-    # Аналогично для талька: {result_id}_talc.png — актуальная маска (в т.ч.
-    # после ручной правки карандашом/ластиком/заливкой), рисуем поверх заново
-    # вместо статичного _talc_layer.jpg со времени анализа.
+    # Same for talc: {result_id}_talc.png is the current mask (including
+    # after manual pencil/eraser/fill edits), so we redraw it on top instead
+    # of the static _talc_layer.jpg from analysis time.
     talc_layer_rgb = None
     talc_mask_path = RESULTS_DIR / f"{result_id}_talc.png"
     if overview_rgb is not None and talc_mask_path.is_file():

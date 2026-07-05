@@ -1,13 +1,13 @@
 """
-Построение маски талька из синей экспертной разметки.
+Building the talc mask from blue expert annotations.
 
-STUB / baseline для фазы 2.
+STUB / baseline for phase 2.
 
-Алгоритм:
-1. Синие штрихи разметчика.
-2. Концы линий у края кадра → продление до рамки (та же толщина, что у синего).
-3. Единый барьер (dilate синего + красного).
-4. Замкнутые области внутри контура → тальк, если внутри темнее снаружи.
+Algorithm:
+1. Blue strokes from the annotator.
+2. Line ends near the frame edge → extended to the border (same thickness as blue).
+3. A single barrier (dilated blue + red).
+4. Closed regions inside the outline → talc, if darker inside than outside.
 """
 from __future__ import annotations
 
@@ -21,23 +21,23 @@ BLUE_MIN_B = 150
 BLUE_MAX_R = 120
 BLUE_MAX_G = 120
 
-# Толщина штриха до dilate (одинакова для синего и красного)
+# Stroke thickness before dilate (same for blue and red)
 STROKE_WIDTH = 3
 BARRIER_DILATE = 3
 
-# Конец линии считаем «у края», если ближе этого (px)
+# A line end is considered "near the edge" if closer than this (px)
 BORDER_NEAR_PX = 80
 
-# Мин. площадь области-кандидата (px)
+# Min. area of a candidate region (px)
 MIN_REGION_AREA = 400
 
-# Макс. доля кадра — отсечь фоновый контур
+# Max. fraction of the frame — cuts off the background outline
 MAX_REGION_FRACTION = 0.85
 
 
 @dataclass
 class TalcMaskResult:
-    """Результат построения маски и слоёв для валидации."""
+    """Result of building the mask and layers for validation."""
 
     talc_mask: NDArray[np.uint8]
     blue_strokes: NDArray[np.uint8]
@@ -47,7 +47,7 @@ class TalcMaskResult:
 
 
 def extract_blue_strokes(bgr: NDArray[np.uint8]) -> NDArray[np.uint8]:
-    """Выделяет синие штрихи экспертной разметки (0/255)."""
+    """Extracts blue strokes from expert annotation (0/255)."""
     b, g, r = cv2.split(bgr)
     blue = ((b > BLUE_MIN_B) & (r < BLUE_MAX_R) & (g < BLUE_MAX_G)).astype(np.uint8) * 255
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
@@ -55,7 +55,7 @@ def extract_blue_strokes(bgr: NDArray[np.uint8]) -> NDArray[np.uint8]:
 
 
 def _stroke_layer(mask: NDArray[np.uint8]) -> NDArray[np.uint8]:
-    """Утолщает бинарную линию до STROKE_WIDTH."""
+    """Thickens a binary line up to STROKE_WIDTH."""
     if not np.any(mask):
         return mask
     layer = mask.copy()
@@ -65,7 +65,7 @@ def _stroke_layer(mask: NDArray[np.uint8]) -> NDArray[np.uint8]:
 
 
 def _skeleton(binary: NDArray[np.uint8]) -> NDArray[np.uint8]:
-    """Морфологический скелет бинарной маски."""
+    """Morphological skeleton of a binary mask."""
     img = (binary > 0).astype(np.uint8)
     skel = np.zeros_like(img)
     element = cv2.getStructuringElement(cv2.MORPH_CROSS, (3, 3))
@@ -78,7 +78,7 @@ def _skeleton(binary: NDArray[np.uint8]) -> NDArray[np.uint8]:
 
 
 def _neighbors8(skeleton: NDArray[np.uint8], x: int, y: int) -> list[tuple[int, int]]:
-    """8-соседи точки на скелете."""
+    """8-neighbors of a point on the skeleton."""
     out: list[tuple[int, int]] = []
     for dy in (-1, 0, 1):
         for dx in (-1, 0, 1):
@@ -92,7 +92,7 @@ def _neighbors8(skeleton: NDArray[np.uint8], x: int, y: int) -> list[tuple[int, 
 
 
 def _dist_to_border(x: int, y: int, w: int, h: int) -> tuple[float, tuple[int, int]]:
-    """Расстояние до ближайшего края и точка на рамке."""
+    """Distance to the nearest edge and the point on the border."""
     candidates = [
         (float(x), (0, y)),
         (float(w - 1 - x), (w - 1, y)),
@@ -108,11 +108,11 @@ def _points_toward_border(
     neighbor: tuple[int, int],
     border_pt: tuple[int, int],
 ) -> bool:
-    """True, если продолжение линии endpoint смотрит в сторону border_pt."""
+    """True if the line continuation from endpoint points toward border_pt."""
     ex, ey = endpoint
     nx, ny = neighbor
     bx, by = border_pt
-    # Направление вдоль линии: от соседа через endpoint наружу
+    # Direction along the line: from the neighbor through the endpoint, outward
     vx, vy = float(ex - nx), float(ey - ny)
     wx, wy = float(bx - ex), float(by - ey)
     v_len = np.hypot(vx, vy)
@@ -125,9 +125,9 @@ def _points_toward_border(
 
 def extend_endpoints_to_border(blue: NDArray[np.uint8]) -> NDArray[np.uint8]:
     """
-    Продлевает только «висящие» концы у края кадра до рамки.
+    Extends only "dangling" ends near the frame edge to the border.
 
-    Красный штрих — та же толщина STROKE_WIDTH, что и синий.
+    The red stroke has the same STROKE_WIDTH thickness as the blue one.
     """
     h, w = blue.shape[:2]
     closure = np.zeros((h, w), dtype=np.uint8)
@@ -158,7 +158,7 @@ def extend_endpoints_to_border(blue: NDArray[np.uint8]) -> NDArray[np.uint8]:
 
 
 def _build_barrier(blue: NDArray[np.uint8], closure: NDArray[np.uint8]) -> NDArray[np.uint8]:
-    """Единый барьер: синий + красный с одинаковым dilate + рамка кадра."""
+    """A single barrier: blue + red with matching dilate, plus the frame border."""
     h, w = blue.shape[:2]
     combined = cv2.bitwise_or(_stroke_layer(blue), _stroke_layer(closure))
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
@@ -172,7 +172,7 @@ def _build_barrier(blue: NDArray[np.uint8], closure: NDArray[np.uint8]) -> NDArr
 
 def _reference_brightness(gray: NDArray[np.uint8], labels: NDArray[np.int32], n_labels: int) -> float:
     """
-    Опорная яркость фона: крупнейшая компонента, касающаяся края кадра.
+    Reference background brightness: the largest component touching the frame edge.
     """
     h, w = gray.shape
     best_area = 0
@@ -194,7 +194,7 @@ def _fill_talc_from_contours(
     gray: NDArray[np.uint8],
     annotation_strokes: NDArray[np.uint8],
 ) -> NDArray[np.uint8]:
-    """Заливка по связным областям, примыкающим к разметке."""
+    """Fill connected regions adjacent to the annotation."""
     h, w = gray.shape[:2]
     total = h * w
     talc = np.zeros((h, w), dtype=np.uint8)
@@ -225,9 +225,9 @@ def _fill_talc_from_contours(
 
 def build_talc_mask(bgr: NDArray[np.uint8]) -> TalcMaskResult:
     """
-    Строит маску талька из кадра с синей разметкой.
+    Builds the talc mask from a frame with blue annotation.
 
-    :param bgr: BGR изображение (annotated)
+    :param bgr: BGR image (annotated)
     :return: TalcMaskResult
     """
     blue = extract_blue_strokes(bgr)
@@ -252,7 +252,7 @@ def build_talc_mask(bgr: NDArray[np.uint8]) -> TalcMaskResult:
 
 
 def _add_label(panel: NDArray[np.uint8], text: str) -> NDArray[np.uint8]:
-    """Подпись панели."""
+    """Panel caption."""
     out = panel.copy()
     cv2.rectangle(out, (0, 0), (out.shape[1], 28), (0, 0, 0), thickness=-1)
     cv2.putText(out, text, (8, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 1, cv2.LINE_AA)
@@ -260,7 +260,7 @@ def _add_label(panel: NDArray[np.uint8], text: str) -> NDArray[np.uint8]:
 
 
 def render_strokes_validation(bgr: NDArray[np.uint8], result: TalcMaskResult) -> NDArray[np.uint8]:
-    """Синяя разметка + красные дорисовки (одинаковая толщина)."""
+    """Blue annotation + red extensions (same thickness)."""
     out = bgr.copy()
     blue_px = result.blue_strokes > 0
     out[blue_px, 0] = np.clip(out[blue_px, 0].astype(np.int16) + 100, 0, 255)
@@ -272,7 +272,7 @@ def render_strokes_validation(bgr: NDArray[np.uint8], result: TalcMaskResult) ->
 
 
 def render_overlay_validation(bgr: NDArray[np.uint8], result: TalcMaskResult, alpha: float = 0.45) -> NDArray[np.uint8]:
-    """Полупрозрачная маска талька."""
+    """Semi-transparent talc mask."""
     overlay = bgr.copy().astype(np.float32)
     talc_px = result.talc_mask > 0
     color = np.array([200, 120, 40], dtype=np.float32)
@@ -281,12 +281,12 @@ def render_overlay_validation(bgr: NDArray[np.uint8], result: TalcMaskResult, al
 
 
 def render_binary_validation(result: TalcMaskResult) -> NDArray[np.uint8]:
-    """Ч/б маска (3 канала для склейки)."""
+    """B/W mask (3 channels for stacking)."""
     return cv2.cvtColor(result.talc_mask, cv2.COLOR_GRAY2BGR)
 
 
 def render_combined_validation(bgr: NDArray[np.uint8], result: TalcMaskResult) -> NDArray[np.uint8]:
-    """Один JPEG: strokes | overlay | binary."""
+    """A single JPEG: strokes | overlay | binary."""
     p1 = _add_label(render_strokes_validation(bgr, result), "1 blue + red extensions")
     p2 = _add_label(render_overlay_validation(bgr, result), f"2 mask overlay {result.talc_percent}%")
     p3 = _add_label(render_binary_validation(result), "3 binary mask")

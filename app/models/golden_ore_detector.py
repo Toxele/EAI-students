@@ -85,8 +85,8 @@ class GoldenOreDetector:
         self.component_close_size = component_close_size
         self.merge_intersecting_boxes = merge_intersecting_boxes
         self.box_merge_gap = box_merge_gap
-        # Отбрасываем вкрапления, у которых обе стороны bbox не больше этого
-        # порога — слишком мелкие кандидаты для устойчивой классификации.
+        # Discard inclusions whose bbox sides are both no larger than this
+        # threshold — too small a candidate for reliable classification.
         self.min_box_side = min_box_side
 
     def detect(self, image_rgb: NDArray[np.uint8]) -> GoldenOreDetectionResult:

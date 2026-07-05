@@ -1,12 +1,11 @@
-"""
-Coarse/fine классификатор срастаний — рядовое (ordinary) vs тонкое (thin).
+"""Coarse/fine intergrowth classifier — ordinary vs thin.
 
-Production: бинарный ResNet (1 логит, sigmoid), обучен
-scripts/train_coarse_fine.py / kaggle/train_coarse_fine_binary.ipynb
-(см. trainers/coarse_fine_trainer.py — target_coarse=1 для ordinary, 0 для thin).
+Binary ResNet (1 logit, sigmoid), trained by
+training/scripts/train_coarse_fine.py / kaggle/train_coarse_fine_binary.ipynb
+(see training/trainers/coarse_fine_trainer.py — target_coarse=1 for ordinary, 0 for thin).
 
-Если весов нет или torch не установлен — .ready остаётся False, вызывающий
-код сам решает, каким эвристическим правилом заменить решение классификатора.
+When weights are missing or torch is unavailable, .ready stays False and the
+caller falls back to its own heuristic instead of calling predict().
 """
 from __future__ import annotations
 
@@ -27,14 +26,14 @@ IMAGENET_STD = np.array([0.229, 0.224, 0.225], dtype=np.float32)
 
 @dataclass
 class OreClassificationResult:
-    """Решение классификатора для одного вкрапления/снимка."""
+    """Classifier decision for a single inclusion/image."""
 
     intergrowth_type: str  # "ordinary" | "thin"
     prob_ordinary: float
 
 
 class OreInclusionClassifier:
-    """Inference бинарного coarse/fine классификатора из checkpoint (best_coarse_fine_binary.pt)."""
+    """Binary coarse/fine classifier inference, loaded from ORE_CLASSIFIER_WEIGHTS."""
 
     def __init__(self, weights_path=None) -> None:
         self._model = None
@@ -46,7 +45,7 @@ class OreInclusionClassifier:
 
     @property
     def ready(self) -> bool:
-        """True, если веса загружены и модель готова к инференсу."""
+        """True once weights are loaded and the model is ready for inference."""
         return self._ready
 
     def _try_load(self) -> None:
@@ -56,7 +55,7 @@ class OreInclusionClassifier:
         try:
             import torch
 
-            from models.classifiers import ClassifierFactory
+            from training.models.classifiers import ClassifierFactory
 
             checkpoint = torch.load(self._weights, map_location="cpu", weights_only=False)
             cfg = checkpoint.get("config", {})
@@ -72,7 +71,7 @@ class OreInclusionClassifier:
             logger.warning("Ore classifier disabled: %s", exc)
 
     def predict(self, image_rgb: NDArray[np.uint8]) -> OreClassificationResult:
-        """Классифицирует патч/снимок как ordinary (рядовое) или thin (тонкое) срастание."""
+        """Classify a patch/image as an ordinary or thin intergrowth."""
         if not self._ready or self._model is None:
             raise RuntimeError("Ore classifier is not ready — check .ready before calling predict()")
 

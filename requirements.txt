@@ -1,23 +1,14 @@
+# Ore Analyzer web app (FastAPI backend + inference)
 numpy>=1.26
-pandas>=2.2
 Pillow>=10.0
 opencv-python>=4.9
-matplotlib>=3.8
 tqdm>=4.66
-scikit-learn>=1.4
-ipykernel>=6.29
-jupyter>=1.0
-mlflow>=2.14
 torch>=2.0
 torchvision>=0.15
 segmentation-models-pytorch>=0.3.3
-ultralytics>=8.2
-gdown>=5.1
-
-# Ore Analyzer web app (FastAPI + Streamlit)
 fastapi>=0.110.0
 uvicorn[standard]>=0.27.0
 python-multipart>=0.0.9
 pydantic>=2.0.0
-streamlit>=1.32.0
 fpdf2>=2.8.0
+gdown>=5.1

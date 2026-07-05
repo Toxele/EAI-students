@@ -1,12 +1,12 @@
 """
-Одноразовая подкачка весов моделей с Google Drive в models/weights/
-(см. app/config.py: WEIGHTS_DIR).
+One-time download of model weights from Google Drive into weights/
+(see app/config.py: WEIGHTS_DIR).
 
-Качает:
-  - Unet++ сегментатор талька       -> TALC_SEGMENTER_WEIGHTS
-  - ResNet coarse/fine классификатор -> ORE_CLASSIFIER_WEIGHTS
+Downloads:
+  - Unet++ talc segmenter            -> TALC_SEGMENTER_WEIGHTS
+  - ResNet coarse/fine classifier    -> ORE_CLASSIFIER_WEIGHTS
 
-Запуск (один раз): py scripts/download_weights.py
+Run (once): py scripts/download_weights.py
 """
 from __future__ import annotations
 
@@ -23,8 +23,8 @@ except ImportError as exc:
 
 from app.config import ORE_CLASSIFIER_WEIGHTS, TALC_SEGMENTER_WEIGHTS, WEIGHTS_DIR
 
-# (Google Drive file id, путь назначения) — порядок соответствует ссылкам,
-# переданным для кейса: сегментатор талька, затем classifier.
+# (Google Drive file id, destination path) — order matches the links
+# provided for the case: talc segmenter, then classifier.
 DOWNLOADS = [
     ("1UJA-9u68n3mC4lATmoK4uSstX4AtqB3D", TALC_SEGMENTER_WEIGHTS),
     ("17e8wTKVmGdwmNB_2OXhT-yeVPpKrmkXA", ORE_CLASSIFIER_WEIGHTS),

@@ -1,5 +1,5 @@
 """
-Главный оркестратор анализа — связывает модели, rule_engine и отчёт.
+Main analysis orchestrator — ties together the models, rule_engine, and report.
 """
 from __future__ import annotations
 
@@ -17,7 +17,6 @@ from app.models.panorama_grain_detector import Grain
 from app.models.talc_segmenter import TalcSegmenter
 from app.pipeline.metrics import enrich_grain, grain_confidence
 from app.pipeline.mode_detector import detect_mode
-from app.pipeline.overlay import draw_grain_overlay
 from app.pipeline.report import format_conclusion
 from app.pipeline.rule_engine import RuleInput, apply_rules
 from app.pipeline.tiling import iter_tiles
@@ -25,7 +24,7 @@ from app.pipeline.tiling import iter_tiles
 
 @dataclass
 class AnalysisReport:
-    """Полный результат анализа одного изображения."""
+    """Full analysis result for a single image."""
 
     mode: str
     sort_code: str
@@ -40,7 +39,6 @@ class AnalysisReport:
     grain_count: int
     grains: list[dict[str, Any]] = field(default_factory=list)
     classifier_match: str | None = None
-    overlay_rgb: NDArray[np.uint8] | None = None
     talc_mask: NDArray[np.uint8] | None = None
     talc_confidence: NDArray[np.uint8] | None = None
     processed_width: int = 0
@@ -48,19 +46,19 @@ class AnalysisReport:
 
 
 class Analyzer:
-    """Точка входа pipeline. Три модели + talc detector для панорамы."""
+    """Pipeline entry point. Three models + talc detector for the panorama."""
 
     def __init__(self) -> None:
-        # STUB: детальный режим — фиксированные bbox зёрен (без обученной модели
-        # детекции сульфидов под detail-снимки); сегментатор талька — Unet++.
+        # STUB: detail mode — fixed grain bboxes (no trained model for
+        # sulfide detection on detail shots); talc segmenter is Unet++.
         self.grain_detector = FixedPanoramaGrainDetector()
-        # Панорама: алгоритмический детектор золоторудных вкраплений (HSV/LAB +
-        # KNN по цвету, см. app/models/golden_ore_detector.py), гоняется по
-        # тайлам — см. _analyze_panorama.
+        # Panorama: algorithmic golden ore inclusion detector (HSV/LAB +
+        # color KNN, see app/models/golden_ore_detector.py), run tile by
+        # tile — see _analyze_panorama.
         self.golden_ore_detector = GoldenOreDetector()
         self.talc_detector = FixedPanoramaTalcDetector()
-        # Реальный coarse/fine классификатор (рядовое/тонкое срастание) —
-        # используется в обоих режимах, когда тальк <= порога оталькованности.
+        # Real coarse/fine classifier (ordinary/thin intergrowth) — used in
+        # both modes whenever talc is <= the talc-ore threshold.
         self.ore_classifier = OreInclusionClassifier()
         self.segmenter = TalcSegmenter()
 
@@ -72,9 +70,9 @@ class Analyzer:
         mode_hint: str | None = None,
     ) -> AnalysisReport:
         """
-        Анализирует изображение.
+        Analyzes an image.
 
-        :param mode_hint: 'panorama' | 'detail' | None (auto по размеру)
+        :param mode_hint: 'panorama' | 'detail' | None (auto by size)
         """
         if mode_hint in ("panorama", "detail"):
             mode = mode_hint
@@ -90,13 +88,14 @@ class Analyzer:
         self, image_rgb: NDArray[np.uint8], mode: str, pw: int, ph: int
     ) -> AnalysisReport:
         """
-        Панорама режется на тайлы ≤PANORAMA_TILE_SIZE и обрабатывается поштучно:
-        цельная обработка гигантского снимка (одним проходом, с downscale под
-        модель) либо виснет, либо схлопывает тальк/зёрна до суб-пикселя и
-        ничего не находит. Каждый тайл берётся с контекстным полем
-        PANORAMA_TILE_MARGIN — без него модель на границе тайла не видит
-        соседних пикселей, и предсказания смежных тайлов расходятся на стыке
-        (видимые швы по сетке). В маски/список зёрен идёт только core тайла.
+        The panorama is cut into tiles of at most PANORAMA_TILE_SIZE and
+        processed tile by tile: processing the giant image whole (one pass,
+        downscaled to fit the model) either hangs or collapses talc/grains
+        to sub-pixel size and finds nothing. Each tile is taken with a
+        PANORAMA_TILE_MARGIN context field — without it the model can't see
+        neighboring pixels at the tile border, and predictions from adjacent
+        tiles disagree at the seam (visible grid-line seams). Only the
+        tile's core goes into the masks/grain list.
         """
         sulfide_mask = np.zeros((ph, pw), dtype=np.uint8)
         talc_mask = np.zeros((ph, pw), dtype=np.uint8)
@@ -116,10 +115,11 @@ class Analyzer:
             for inclusion in detection.inclusions:
                 ix, iy, iw, ih = inclusion.bbox
                 global_x, global_y = ix + origin_x, iy + origin_y
-                # Центр вкрапления должен лежать в core тайла — иначе оно
-                # попало только в margin и будет целиком найдено соседним
-                # тайлом, где эта же область — его core (без этого вкрапления
-                # на стыке задваивались бы).
+                # The inclusion's center must lie within the tile's core —
+                # otherwise it only landed in the margin and will be found
+                # in full by the neighboring tile, where this same area is
+                # its core (without this check, inclusions at the seam
+                # would be duplicated).
                 cx, cy = global_x + iw / 2, global_y + ih / 2
                 if not (
                     tile.core_x <= cx < tile.core_x + tile.core_w
@@ -144,8 +144,8 @@ class Analyzer:
                 tile_confidence = seg_result.talc_confidence
             else:
                 tile_talc, _ = self.talc_detector.predict(tile.image, detection.mask)
-                # Заглушка не оценивает уверенность — считаем её максимальной
-                # там, где заглушка вообще что-то нашла.
+                # The stub doesn't estimate confidence — treat it as maximal
+                # wherever the stub found anything at all.
                 tile_confidence = tile_talc
             core_talc = tile.crop_to_core(tile_talc)
             core_confidence = tile.crop_to_core(tile_confidence)
@@ -168,10 +168,6 @@ class Analyzer:
             )
         )
 
-        # Используется только Streamlit-фронтендом (frontend/app.py) для
-        # предпросмотра overlay — при желании можно тоже перевести на тайлы,
-        # но там снимки не панорамного размера.
-        overlay = draw_grain_overlay(image_rgb, grains, talc_mask=talc_mask)
         conclusion = format_conclusion(
             sort_label_ru=rule.sort_label_ru,
             talc_percent=talc_percent,
@@ -202,7 +198,6 @@ class Analyzer:
             grain_count=len(grains),
             grains=[self._grain_to_dict(g) for g in grains],
             classifier_match=classifier_match,
-            overlay_rgb=overlay,
             talc_mask=talc_mask,
             talc_confidence=talc_confidence,
             processed_width=pw,
@@ -212,14 +207,14 @@ class Analyzer:
     def _classify_inclusion(
         self, patch_rgb: NDArray[np.uint8], inclusion: GoldenOreInclusion
     ) -> tuple[str, float]:
-        """Классифицирует одно вкрапление как ordinary (рядовое) или thin (тонкое)."""
+        """Classifies a single inclusion as ordinary or thin."""
         if self.ore_classifier.ready and patch_rgb.size:
             result = self.ore_classifier.predict(patch_rgb)
             gray_ratio = (1.0 - result.prob_ordinary) * 0.5
             return result.intergrowth_type, gray_ratio
 
-        # Фолбэк без весов: компактные, почти не замещённые блобы (высокий
-        # fill_ratio) — рядовые; сильно фрагментированные — тонкие.
+        # Fallback without weights: compact, barely-replaced blobs (high
+        # fill_ratio) are ordinary; heavily fragmented ones are thin.
         if inclusion.fill_ratio >= 0.5:
             return "ordinary", 0.1
         return "thin", 0.4
@@ -227,7 +222,7 @@ class Analyzer:
     def _analyze_detail(
         self, image_rgb: NDArray[np.uint8], mode: str, pw: int, ph: int
     ) -> AnalysisReport:
-        """Детальный OM: сегментатор талька + coarse/fine классификатор."""
+        """Detail OM: talc segmenter + coarse/fine classifier."""
         seg = self.segmenter.predict(image_rgb)
         grains, sulfide_mask = self.grain_detector.detect(image_rgb)
 
@@ -235,15 +230,16 @@ class Analyzer:
         talc_percent = seg.talc_percent
         talc_confidence = seg.talc_confidence
         if not self.segmenter.ready:
-            # Веса не загружены — используем заглушку, чтобы UI не падал.
+            # Weights not loaded — fall back to the stub so the UI doesn't crash.
             talc_mask, talc_percent = self.talc_detector.predict(image_rgb, sulfide_mask)
-            # Заглушка не оценивает уверенность — считаем её максимальной там,
-            # где заглушка вообще что-то нашла.
+            # The stub doesn't estimate confidence — treat it as maximal
+            # wherever the stub found anything at all.
             talc_confidence = talc_mask
 
-        # Тальк > порога — руда уже оталькованная, классификатор не нужен
-        # (см. app/pipeline/rule_engine.py). Иначе решаем рядовая/труднообогатимая
-        # реальным classifier — его вердикт применяется ко всем найденным зёрнам.
+        # Talc above the threshold means the ore is already talc ore, no
+        # classifier needed (see app/pipeline/rule_engine.py). Otherwise we
+        # decide ordinary/hard-to-beneficiate with the real classifier — its
+        # verdict is applied to every grain found.
         classifier_match = None
         if talc_percent <= TALC_PERCENT_THRESHOLD and self.ore_classifier.ready:
             result = self.ore_classifier.predict(image_rgb)
@@ -263,7 +259,6 @@ class Analyzer:
             )
         )
 
-        overlay = draw_grain_overlay(image_rgb, grains, talc_mask=talc_mask)
         conclusion = format_conclusion(
             sort_label_ru=rule.sort_label_ru,
             talc_percent=talc_percent,
@@ -291,7 +286,6 @@ class Analyzer:
             grain_count=len(grains),
             grains=[self._grain_to_dict(g) for g in grains],
             classifier_match=classifier_match,
-            overlay_rgb=overlay,
             talc_mask=talc_mask,
             talc_confidence=talc_confidence,
             processed_width=pw,

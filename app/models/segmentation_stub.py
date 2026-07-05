@@ -1,8 +1,4 @@
-"""
-STUB: fallback если весов нет.
-
-Production: app/models/talc_segmenter.py + models/weights/best_talk.pt
-"""
+"""Shared segmentation result type and empty-mask fallback."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -13,30 +9,27 @@ from numpy.typing import NDArray
 
 @dataclass
 class SegmentationResult:
-    """Результат сегментации: маски и доли фаз."""
+    """Segmentation output: masks and phase percentages."""
 
     overlay_rgb: NDArray[np.uint8]
-    talc_mask: NDArray[np.uint8]  # бинарная маска талька (H×W)
+    talc_mask: NDArray[np.uint8]  # binary talc mask (H x W)
     talc_percent: float
     sulfide_percent: float
     matrix_percent: float
-    # Карта уверенности модели (H×W, 0..255) — чем выше значение, тем
-    # увереннее модель в предсказании для этого пикселя.
+    # Per-pixel confidence map (H x W, 0..255); higher means more confident.
     talc_confidence: NDArray[np.uint8]
 
 
-class SegmentationStub:
-    """STUB: passthrough — talc_mask пустая, проценты = заглушка."""
+def empty_segmentation_result(image_rgb: NDArray[np.uint8]) -> SegmentationResult:
+    """Fallback result used when no trained segmenter is available."""
+    height, width = image_rgb.shape[:2]
+    empty_mask = np.zeros((height, width), dtype=np.uint8)
 
-    def predict(self, image_rgb: NDArray[np.uint8]) -> SegmentationResult:
-        height, width = image_rgb.shape[:2]
-        empty_mask = np.zeros((height, width), dtype=np.uint8)
-
-        return SegmentationResult(
-            overlay_rgb=image_rgb.copy(),
-            talc_mask=empty_mask,
-            talc_percent=0.0,
-            sulfide_percent=0.0,
-            matrix_percent=100.0,
-            talc_confidence=empty_mask,
-        )
+    return SegmentationResult(
+        overlay_rgb=image_rgb.copy(),
+        talc_mask=empty_mask,
+        talc_percent=0.0,
+        sulfide_percent=0.0,
+        matrix_percent=100.0,
+        talc_confidence=empty_mask,
+    )

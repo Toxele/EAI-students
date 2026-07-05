@@ -1,4 +1,4 @@
-"""Pydantic-схемы ответов API."""
+"""Pydantic schemas for API responses."""
 
 from pydantic import BaseModel, Field
 
@@ -29,7 +29,7 @@ class CountsSchema(BaseModel):
 
 
 class MetricsSchema(BaseModel):
-    """Таблица метрик из постановки задачи."""
+    """Metrics table from the task specification."""
 
     sulfide_percent: float
     ordinary_percent: float
@@ -48,7 +48,7 @@ class AnalysisResponse(BaseModel):
     mode: str
     sort_label_ru: str
     sort_code: str
-    conclusion: str = Field(description="Краткое заключение на русском")
+    conclusion: str = Field(description="Brief conclusion, in Russian")
     explanation: str
     talc_percent: float | None
     talc_available: bool

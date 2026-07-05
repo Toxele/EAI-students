@@ -1,17 +1,18 @@
 """
-Разбиение больших изображений на тайлы для поштучной обработки.
+Splitting large images into tiles for piece-by-piece processing.
 
-Модели сегментации/детекции обучены на масштабе отдельных кадров —
-скармливать им панораму целиком после downscale теряет мелкие детали
-(тальк, зёрна схлопываются до суб-пикселя). Панорама режется на тайлы
-ограниченного размера, каждый обрабатывается независимо в исходном
-разрешении, результаты сшиваются обратно по смещению (x, y).
+Segmentation/detection models are trained at the scale of individual
+frames — feeding them the whole panorama after downscaling loses fine
+detail (talc, grains collapse to sub-pixel size). The panorama is cut into
+tiles of bounded size, each processed independently at full resolution,
+and the results are stitched back together by offset (x, y).
 
-Каждый тайл берётся с контекстным полем (margin) вокруг «своей» области
-(core) — если резать без запаса, модель на границе тайла не видит соседних
-пикселей, и предсказания двух смежных тайлов на стыке расходятся (видимые
-швы по сетке тайлов). В итоговую маску/список объектов идёт только core —
-margin нужен исключительно моделью для контекста и в результат не пишется.
+Each tile is taken with a context field (margin) around its "own" area
+(core) — if cut without this margin, the model can't see neighboring
+pixels at the tile border, and predictions from two adjacent tiles
+disagree at the seam (visible seams along the tile grid). Only the core
+goes into the final mask/object list — the margin exists solely to give
+the model context and isn't written to the result.
 """
 from __future__ import annotations
 
@@ -25,12 +26,12 @@ from numpy.typing import NDArray
 @dataclass
 class Tile:
     """
-    Тайл с контекстным полем.
+    A tile with a context margin.
 
-    :param core_x, core_y: левый верхний угол core-региона в исходном изображении
-    :param core_w, core_h: размер core-региона (то, что реально пишется в результат)
-    :param offset_x, offset_y: смещение core внутри image (из-за поля margin)
-    :param image: пиксели тайла (core + margin), обрезанные по границам изображения
+    :param core_x, core_y: top-left corner of the core region in the original image
+    :param core_w, core_h: size of the core region (what's actually written to the result)
+    :param offset_x, offset_y: offset of the core within image (due to the margin)
+    :param image: tile pixels (core + margin), clipped to the image boundaries
     """
 
     core_x: int
@@ -42,7 +43,7 @@ class Tile:
     image: NDArray[np.uint8]
 
     def crop_to_core(self, array: NDArray) -> NDArray:
-        """Обрезает массив (в системе координат image) до core-региона тайла."""
+        """Crops an array (in image coordinates) to the tile's core region."""
         return array[
             self.offset_y : self.offset_y + self.core_h,
             self.offset_x : self.offset_x + self.core_w,
@@ -50,7 +51,7 @@ class Tile:
 
 
 def iter_tiles(image_rgb: NDArray[np.uint8], tile_size: int, margin: int = 0) -> Iterator[Tile]:
-    """Итерирует тайлы core-размером tile_size x tile_size с полем margin вокруг."""
+    """Iterates tiles with a core size of tile_size x tile_size surrounded by a margin."""
     height, width = image_rgb.shape[:2]
     for y in range(0, height, tile_size):
         for x in range(0, width, tile_size):

@@ -1,7 +1,7 @@
 """
-Загрузка изображений с диска или bytes.
+Loading images from disk or bytes.
 
-cv2.imread не работает с кириллицей в пути на Windows — читаем через np.fromfile + imdecode.
+cv2.imread doesn't work with Cyrillic paths on Windows — read via np.fromfile + imdecode instead.
 """
 from __future__ import annotations
 
@@ -16,17 +16,17 @@ from app.config import MAX_PROCESS_SIDE
 
 def imread_unicode(path: Path) -> NDArray[np.uint8] | None:
     """
-    Читает BGR изображение с диска (работает с кириллицей в пути).
+    Reads a BGR image from disk (works with Cyrillic paths).
 
-    :param path: путь к файлу
-    :return: BGR uint8 или None
+    :param path: path to the file
+    :return: BGR uint8 or None
     """
     data = np.fromfile(str(path), dtype=np.uint8)
     return cv2.imdecode(data, cv2.IMREAD_COLOR)
 
 
 def load_image(path: Path) -> NDArray[np.uint8]:
-    """Читает файл и возвращает RGB uint8."""
+    """Reads the file and returns RGB uint8."""
     bgr = imread_unicode(path)
     if bgr is None:
         raise ValueError(f"Не удалось прочитать изображение: {path}")
@@ -36,7 +36,7 @@ def load_image(path: Path) -> NDArray[np.uint8]:
 
 
 def load_image_from_bytes(data: bytes) -> NDArray[np.uint8]:
-    """Читает изображение из bytes (upload)."""
+    """Reads an image from bytes (upload)."""
     arr = np.frombuffer(data, dtype=np.uint8)
     bgr = cv2.imdecode(arr, cv2.IMREAD_COLOR)
     if bgr is None:
@@ -47,7 +47,7 @@ def load_image_from_bytes(data: bytes) -> NDArray[np.uint8]:
 
 
 def maybe_downscale(image_rgb: NDArray[np.uint8]) -> NDArray[np.uint8]:
-    """Уменьшает картинку, если длинная сторона > MAX_PROCESS_SIDE."""
+    """Downscales the image if the long side > MAX_PROCESS_SIDE."""
     height, width = image_rgb.shape[:2]
     max_side = max(height, width)
 

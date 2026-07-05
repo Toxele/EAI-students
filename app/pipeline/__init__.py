@@ -1,1 +1,1 @@
-"""Pipeline — загрузка, анализ, правила."""
+"""Pipeline — loading, analysis, rules."""

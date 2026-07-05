@@ -1,7 +1,6 @@
-"""
-Сегментатор талька — Unet++ fast_768 (Kaggle).
+"""Talc segmenter — Unet++ fast_768 trained on Kaggle.
 
-Если весов нет или torch не установлен — пустая маска.
+Falls back to an empty mask when weights are missing or torch is unavailable.
 """
 from __future__ import annotations
 
@@ -11,13 +10,13 @@ import numpy as np
 from numpy.typing import NDArray
 
 from app.config import TALC_SEGMENTER_WEIGHTS
-from app.models.segmentation_stub import SegmentationResult
+from app.models.segmentation_stub import SegmentationResult, empty_segmentation_result
 
 logger = logging.getLogger(__name__)
 
 
 class TalcSegmenter:
-    """Inference Unet++ по models/weights/best_talk.pt."""
+    """Unet++ talc segmentation inference, loaded from TALC_SEGMENTER_WEIGHTS."""
 
     def __init__(self, weights_path=None) -> None:
         self._model = None
@@ -29,7 +28,7 @@ class TalcSegmenter:
 
     @property
     def ready(self) -> bool:
-        """True, если веса загружены и модель готова к инференсу."""
+        """True once weights are loaded and the model is ready for inference."""
         return self._ready
 
     def _try_load(self) -> None:
@@ -39,7 +38,7 @@ class TalcSegmenter:
         try:
             import torch
 
-            from models.talc_unetpp import load_talc_model
+            from training.models.talc_unetpp import load_talc_model
 
             self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             self._model, meta = load_talc_model(self._weights, self._device)
@@ -54,21 +53,11 @@ class TalcSegmenter:
             logger.warning("Talc segmenter disabled: %s", exc)
 
     def predict(self, image_rgb: NDArray[np.uint8]) -> SegmentationResult:
-        """Маска талька + overlay."""
-        height, width = image_rgb.shape[:2]
-        empty = np.zeros((height, width), dtype=np.uint8)
-
+        """Talc mask and overlay for the given image."""
         if not self._ready or self._model is None:
-            return SegmentationResult(
-                overlay_rgb=image_rgb.copy(),
-                talc_mask=empty,
-                talc_percent=0.0,
-                sulfide_percent=0.0,
-                matrix_percent=100.0,
-                talc_confidence=empty,
-            )
+            return empty_segmentation_result(image_rgb)
 
-        from models.talc_unetpp import predict_talc_mask
+        from training.models.talc_unetpp import predict_talc_mask
 
         talc_mask, talc_percent, talc_confidence = predict_talc_mask(
             self._model,

@@ -1,14 +1,14 @@
 """
-Подсчёт метрик по списку зёрен с учётом правок пользователя.
+Computing metrics over the grain list, accounting for user corrections.
 
-k — всего вкр. (без false_positive)
-l — рядовых, j — тонких
+k — total inclusions (excluding false_positive)
+l — ordinary, j — thin
 """
 from __future__ import annotations
 
 from typing import Any
 
-# Статусы зерна
+# Grain statuses
 STATUS_ORDINARY = "ordinary"
 STATUS_THIN = "thin"
 STATUS_UNCERTAIN = "uncertain"
@@ -17,9 +17,9 @@ STATUS_FALSE_POSITIVE = "false_positive"
 
 def grain_confidence(gray_ratio: float) -> tuple[float, float]:
     """
-    STUB: уверенность рядового/тонкого из gray_ratio детектора.
+    STUB: ordinary/thin confidence from the detector's gray_ratio.
 
-    Позже заменить на softmax модели классификации.
+    Replace later with the classification model's softmax.
     """
     conf_thin = min(1.0, max(0.0, gray_ratio / 0.5))
     conf_ordinary = 1.0 - conf_thin
@@ -27,13 +27,13 @@ def grain_confidence(gray_ratio: float) -> tuple[float, float]:
 
 
 def compute_grain_counts(grains: list[dict[str, Any]]) -> dict[str, int]:
-    """Считает k, l, j и прочие по текущему списку зёрен."""
+    """Computes k, l, j, and others over the current grain list."""
     active = [g for g in grains if g.get("status", STATUS_ORDINARY) != STATUS_FALSE_POSITIVE]
     ordinary = [g for g in active if g.get("status") == STATUS_ORDINARY or g.get("intergrowth_type") == STATUS_ORDINARY]
     thin = [g for g in active if g.get("status") == STATUS_THIN or g.get("intergrowth_type") == STATUS_THIN]
     uncertain = [g for g in active if g.get("status") == STATUS_UNCERTAIN]
 
-    # Если status не задан — берём intergrowth_type
+    # If status isn't set, fall back to intergrowth_type
     def is_ordinary(g: dict) -> bool:
         s = g.get("status") or g.get("intergrowth_type", STATUS_ORDINARY)
         return s == STATUS_ORDINARY
@@ -56,7 +56,7 @@ def compute_grain_counts(grains: list[dict[str, Any]]) -> dict[str, int]:
 
 
 def compute_intergrowth_percent(grains: list[dict[str, Any]]) -> tuple[float, float]:
-    """Доли рядовых/тонких по площади среди активных зёрен."""
+    """Ordinary/thin area shares among active grains."""
     active = [g for g in grains if g.get("status", STATUS_ORDINARY) != STATUS_FALSE_POSITIVE]
     if not active:
         return 50.0, 50.0
@@ -72,7 +72,7 @@ def compute_intergrowth_percent(grains: list[dict[str, Any]]) -> tuple[float, fl
     ordinary_area = area_for_type(STATUS_ORDINARY)
     thin_area = area_for_type(STATUS_THIN)
     uncertain_area = area_for_type(STATUS_UNCERTAIN)
-    # Неопределённые делим поровну для rule engine
+    # Split uncertain ones evenly for the rule engine
     half_unc = uncertain_area / 2
     ordinary_area += int(half_unc)
     thin_area += int(uncertain_area - half_unc)
@@ -87,7 +87,7 @@ def compute_intergrowth_percent(grains: list[dict[str, Any]]) -> tuple[float, fl
 
 
 def enrich_grain(grain: dict[str, Any]) -> dict[str, Any]:
-    """Добавляет status и confidence по умолчанию."""
+    """Adds default status and confidence."""
     item = dict(grain)
     conf_o, conf_t = grain_confidence(float(item.get("gray_ratio", 0)))
     item.setdefault("status", item.get("intergrowth_type", STATUS_ORDINARY))
@@ -97,7 +97,7 @@ def enrich_grain(grain: dict[str, Any]) -> dict[str, Any]:
 
 
 def sulfide_area_percent(grains: list[dict[str, Any]], total_pixels: int) -> float:
-    """Доля площади сульфидов от всего кадра."""
+    """Sulfide area share of the whole frame."""
     active = [g for g in grains if g.get("status") != STATUS_FALSE_POSITIVE]
     area = sum(int(g.get("area", 0)) for g in active)
     return round(100.0 * area / max(total_pixels, 1), 2)

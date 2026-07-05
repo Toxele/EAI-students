@@ -1,7 +1,7 @@
 """
-Определение режима: панорама или детальный OM-снимок.
+Detecting the mode: panorama or detail OM shot.
 
-По размеру исходного изображения (до downscale можно смотреть meta).
+Based on the original image size (metadata can be read before downscaling).
 """
 from __future__ import annotations
 
@@ -10,10 +10,10 @@ from app.config import PANORAMA_PIXEL_THRESHOLD
 
 def detect_mode(width: int, height: int) -> str:
     """
-    Возвращает 'panorama' или 'detail'.
+    Returns 'panorama' or 'detail'.
 
-    :param width: ширина в пикселях
-    :param height: высота в пикселях
+    :param width: width in pixels
+    :param height: height in pixels
     """
     total_pixels = width * height
 

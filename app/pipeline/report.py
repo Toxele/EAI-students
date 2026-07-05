@@ -1,7 +1,7 @@
 """
-Формирование текстового отчёта и CSV-метрик для UI и API.
+Building the text report and CSV metrics for the UI and API.
 
-Отдельный модуль — не модель и не rule_engine.
+A separate module — not a model, not the rule_engine.
 """
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from app.config import TALC_PERCENT_THRESHOLD
 
 @dataclass
 class ReportMetrics:
-    """Табличные метрики для экспорта."""
+    """Tabular metrics for export."""
 
     sulfide_percent: float
     ordinary_percent: float
@@ -36,15 +36,16 @@ def format_conclusion(
     mode: str,
 ) -> str:
     """
-    Краткое заключение в стиле постановки задачи.
+    Brief conclusion in the style of the task specification.
 
-    Пример (панорама): «Руда классифицирована как оталькованная: содержание
-    талька — 14%, преобладание тонких срастаний — 62%.»
+    Example (panorama): "Ore classified as talc ore: talc content — 14%,
+    thin intergrowths dominate — 62%."
 
-    В режиме "detail" (близкое фото) сорт рядовая/труднообогатимая решает
-    classifier на всём кадре (см. app/pipeline/analyzer.py), а не измеренная
-    площадь срастаний — поэтому про их "преобладание" не пишем, оно там
-    тривиально 100/0 и ничего не сообщает пользователю.
+    In "detail" mode (close-up photo), the ordinary/hard-to-beneficiate sort
+    is decided by the classifier over the whole frame (see
+    app/pipeline/analyzer.py), not by measured intergrowth area — so we don't
+    write about their "dominance" there, since it's trivially 100/0 and
+    tells the user nothing.
     """
     talc_dominant = talc_available and talc_percent is not None and talc_percent > TALC_PERCENT_THRESHOLD
 
@@ -90,7 +91,7 @@ def format_conclusion(
 
 
 def metrics_to_csv(metrics: ReportMetrics) -> str:
-    """Возвращает CSV-строку с одной строкой метрик."""
+    """Returns a CSV string with one row of metrics."""
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow(

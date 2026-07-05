@@ -1,7 +1,7 @@
 """
-Экспертные правила классификации сорта руды (из постановки задачи).
+Expert rules for classifying the ore sort (from the task specification).
 
-Это НЕ модель — фиксированная логика поверх метрик.
+This is NOT a model — fixed logic on top of the metrics.
 """
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from app.config import TALC_PERCENT_THRESHOLD
 
 @dataclass
 class RuleInput:
-    """Метрики для принятия решения."""
+    """Metrics used for the decision."""
 
     talc_percent: float | None
     ordinary_percent: float
@@ -29,12 +29,12 @@ class RuleOutput:
 
 def apply_rules(data: RuleInput) -> RuleOutput:
     """
-    Применяет правило из постановки:
+    Applies the rule from the task specification:
 
-    - talc > TALC_PERCENT_THRESHOLD → оталькованная
-    - иначе: преобладают ordinary → рядовая, иначе → труднообогатимая
+    - talc > TALC_PERCENT_THRESHOLD → talc ore
+    - otherwise: ordinary dominates → ordinary ore, else → hard-to-beneficiate ore
     """
-    # Если тальк измерен и больше порога из config
+    # If talc was measured and exceeds the config threshold
     if (
         data.talc_available
         and data.talc_percent is not None
@@ -50,7 +50,7 @@ def apply_rules(data: RuleInput) -> RuleOutput:
             ),
         )
 
-    # Без талька или talc <= 10% — смотрим срастания
+    # No talc or talc <= 10% — look at intergrowths
     if data.ordinary_percent >= data.thin_percent:
         extra = ""
         if not data.talc_available:

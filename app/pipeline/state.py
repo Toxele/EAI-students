@@ -1,5 +1,5 @@
 """
-Сохранение и пересчёт полного состояния анализа (зёрна, метрики, правки).
+Saving and recalculating the full analysis state (grains, metrics, corrections).
 """
 from __future__ import annotations
 
@@ -44,7 +44,7 @@ def save_state(state: dict[str, Any]) -> None:
 def scale_grains_to_original(
     grains: list[dict[str, Any]], scale_x: float, scale_y: float
 ) -> list[dict[str, Any]]:
-    """Переводит bbox и area из processed → original координаты."""
+    """Converts bbox and area from processed → original coordinates."""
     scaled: list[dict[str, Any]] = []
     for g in grains:
         x, y, w, h = g["bbox"]
@@ -63,9 +63,9 @@ def scale_grains_to_original(
 
 def recalculate_state(state: dict[str, Any]) -> dict[str, Any]:
     """
-    Пересчитывает метрики, rule engine и conclusion после правок зёрен.
+    Recalculates metrics, the rule engine, and the conclusion after grain corrections.
 
-    Использует processed размер для % сульфидов (area в original coords / original pixels).
+    Uses the processed size for the sulfide % (area in original coords / original pixels).
     """
     grains = [enrich_grain(g) for g in state.get("grains", [])]
     img = state.get("image", {})
@@ -121,7 +121,7 @@ def recalculate_state(state: dict[str, Any]) -> dict[str, Any]:
 
 def apply_corrections(state: dict[str, Any], updates: list[dict[str, Any]]) -> dict[str, Any]:
     """
-    Применяет правки пользователя к зёрнам по id.
+    Applies user corrections to grains by id.
 
     update: {id, status?, bbox?}
     status: ordinary | thin | uncertain | false_positive
@@ -148,14 +148,14 @@ def apply_corrections(state: dict[str, Any], updates: list[dict[str, Any]]) -> d
 
 
 def save_talc_layer_png(result_id: str, talc_mask: np.ndarray) -> str:
-    """Сохраняет маску талька как PNG. Возвращает относительный URL."""
+    """Saves the talc mask as PNG. Returns a relative URL."""
     path = RESULTS_DIR / f"{result_id}_talc.png"
     cv2.imwrite(str(path), talc_mask)
     return f"/result/{result_id}/layer/talc"
 
 
 def save_talc_confidence_png(result_id: str, talc_confidence: np.ndarray) -> str:
-    """Сохраняет карту уверенности талька (0..255) как PNG. Возвращает относительный URL."""
+    """Saves the talc confidence map (0..255) as PNG. Returns a relative URL."""
     path = RESULTS_DIR / f"{result_id}_talc_confidence.png"
     cv2.imwrite(str(path), talc_confidence)
     return f"/result/{result_id}/layer/talc-confidence"

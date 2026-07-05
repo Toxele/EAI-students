@@ -1,1 +1,1 @@
-"""Пакет приложения Nornickel Ore Analyzer."""
+"""Nornickel Ore Analyzer application package."""

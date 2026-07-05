@@ -1,3 +1,0 @@
-# ML inference (talc segmenter)
-torch>=2.0
-segmentation-models-pytorch>=0.3

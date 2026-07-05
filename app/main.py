@@ -1,7 +1,7 @@
 """
 FastAPI entry point.
 
-Запуск: uvicorn app.main:app --reload --port 8000
+Run: uvicorn app.main:app --reload --port 8000
 """
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -45,7 +45,7 @@ async def analyze(
     mode: str | None = Form(default=None),
 ) -> AnalysisResponse:
     """
-    Загрузить OM-фото или панораму и получить классификацию.
+    Upload an OM photo or panorama and get a classification.
 
     mode: 'panorama' | 'detail' | None (auto)
     """
@@ -62,7 +62,7 @@ async def analyze(
 
 @app.post("/result/{result_id}/corrections", response_model=CorrectionsResponse)
 def post_corrections(result_id: str, body: CorrectionsRequest) -> CorrectionsResponse:
-    """Применить правки зёрен (класс / bbox / ложная детекция) и пересчитать метрики."""
+    """Apply grain corrections (class / bbox / false detection) and recalculate metrics."""
     updates = [u.model_dump(exclude_none=True) for u in body.grains]
     result = apply_grain_corrections(result_id, updates)
     if result is None:
@@ -72,7 +72,7 @@ def post_corrections(result_id: str, body: CorrectionsRequest) -> CorrectionsRes
 
 @app.post("/result/{result_id}/talc-mask", response_model=CorrectionsResponse)
 async def post_talc_mask(result_id: str, mask: UploadFile = File(...)) -> CorrectionsResponse:
-    """Сохранить отредактированную маску талька (карандаш/ластик/заливка) и пересчитать метрики."""
+    """Save an edited talc mask (pencil/eraser/fill) and recalculate metrics."""
     data = await mask.read()
     try:
         result = apply_talc_mask_edit(result_id, data)

@@ -1,2 +1,0 @@
-"""Nornickel ore microscopy toolkit."""
-

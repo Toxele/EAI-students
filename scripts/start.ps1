@@ -1,4 +1,4 @@
-# Запуск Nornickel Ore Analyzer (Windows)
+# Launch Nornickel Ore Analyzer (Windows)
 $ScriptsDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Root = Split-Path -Parent $ScriptsDir
 Set-Location $Root

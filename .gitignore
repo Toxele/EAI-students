@@ -1,17 +1,18 @@
-models/weights/*.pt
+# Model weights (see weights/README.md — fetch with scripts/download_weights.py)
+/weights/*.pt
+*.pt
 
 # Large dataset copies (keep locally)
-dataset/source/
-dataset/classification/
-dataset/cvat/to_annotate/
-dataset/cvat/reference_blue/
-dataset/kaggle/talc_segmentation/images/
-dataset/kaggle/talc_segmentation/masks/
+training/dataset/source/
+training/dataset/classification/
+training/dataset/cvat/to_annotate/
+training/dataset/cvat/reference_blue/
+training/dataset/kaggle/talc_segmentation/images/
+training/dataset/kaggle/talc_segmentation/masks/
+training/dataset/kaggle/*.zip
 artifacts/
-dataset/
-spbgu_data/
-ore_detection_data/
-notebooks/**/outputs/
+training/dataset/
+training/notebooks/**/outputs/
 __pycache__/
 *.pyc
 .venv/
@@ -31,12 +32,9 @@ web/node_modules/
 web/dist/
 
 # Raw dataset images (large, keep locally)
-/data/Панорамы/
-/data/Фото*/
+/training/data/Панорамы/
+/training/data/Фото*/
 
 # Local backup files from merge
 *.local.bak
 *.app.bak
-
-# Models
-*.pt
